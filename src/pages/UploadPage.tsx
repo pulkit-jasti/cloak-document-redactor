@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,51 +9,42 @@ export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isCloaking, setIsCloaking] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const pdfUrlRef = useRef<string | null>(null)
 
   const handleFileChange = (file: File | null) => {
-    if (file && file.type === "application/pdf") {
-      setSelectedFile(file)
-    }
+    if (file && file.type === "application/pdf") setSelectedFile(file)
   }
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(false)
-    const file = e.dataTransfer.files[0] ?? null
-    handleFileChange(file)
+    handleFileChange(e.dataTransfer.files[0] ?? null)
   }, [])
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = () => setIsDragging(false)
 
   const handleCloak = () => {
     if (!selectedFile) return
+    pdfUrlRef.current = URL.createObjectURL(selectedFile)
     setIsCloaking(true)
   }
 
   return (
     <>
       {isCloaking && (
-        <CloakingOverlay onComplete={() => navigate("/preview")} />
+        <CloakingOverlay
+          onComplete={() => navigate("/preview", { state: { pdfUrl: pdfUrlRef.current } })}
+        />
       )}
 
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
-        {/* Logo */}
         <div className="absolute top-6 left-6 text-sm font-semibold tracking-tight">
           Cloak
         </div>
 
         <div className="w-full max-w-md flex flex-col items-center gap-6 text-center">
-          {/* Privacy badge */}
           <Badge variant="outline" className="text-xs px-3 py-1">
             🔒 100% local — your document never leaves your device
           </Badge>
 
-          {/* Headline */}
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-semibold tracking-tight">
               Cloak your document before sharing with AI
@@ -63,12 +54,11 @@ export default function UploadPage() {
             </p>
           </div>
 
-          {/* Drop zone / File card */}
           {!selectedFile ? (
             <div
               onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+              onDragLeave={() => setIsDragging(false)}
               onClick={() => document.getElementById("file-input")?.click()}
               className={`w-full border-2 border-dashed rounded-xl p-10 cursor-pointer transition-colors flex flex-col items-center gap-3
                 ${isDragging ? "border-primary bg-muted" : "border-border hover:border-primary hover:bg-muted/50"}`}
@@ -88,7 +78,6 @@ export default function UploadPage() {
             </div>
           ) : (
             <div className="w-full flex flex-col gap-4">
-              {/* File card */}
               <div className="flex items-center gap-3 border rounded-xl px-4 py-3 bg-card">
                 <span className="text-2xl">📄</span>
                 <span className="flex-1 text-sm font-medium truncate text-left">
@@ -103,7 +92,6 @@ export default function UploadPage() {
                 </button>
               </div>
 
-              {/* CTA */}
               <Button
                 size="lg"
                 className="w-full gap-2 shadow-[0_0_20px_hsl(var(--primary)/0.35)]"

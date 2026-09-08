@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import UploadPage from '@/pages/UploadPage';
 import PreviewPage from '@/pages/PreviewPage';
-import ReviewPage from '@/pages/ReviewPage';
+import EditPage from '@/pages/EditPage';
 import ModelLoadingIndicator from '@/components/ModelLoadingIndicator';
 import NERPipeline, {
 	ModelStatus,
@@ -35,7 +35,7 @@ export default function App() {
 			<Routes>
 				<Route path='/' element={<UploadPage />} />
 				<Route path='/preview' element={<PreviewPage />} />
-				<Route path='/review' element={<ReviewPage />} />
+				<Route path='/edit' element={<EditPage />} />
 			</Routes>
 		</BrowserRouter>
 	);
