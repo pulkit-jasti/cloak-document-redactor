@@ -23,12 +23,12 @@ Everything runs locally. The model is fetched once and cached in the browser's C
 
 ## Browser support
 
-| Browser | Inference backend |
-|---|---|
-| Chrome / Edge | WebGPU (GPU) |
-| Safari 18+ | WebGPU (GPU) |
-| Firefox | WASM (CPU): WebGPU behind flag |
-| Other | WASM (CPU) |
+| Browser       | Inference backend              |
+| ------------- | ------------------------------ |
+| Chrome / Edge | WebGPU (GPU)                   |
+| Safari 18+    | WebGPU (GPU)                   |
+| Firefox       | WASM (CPU): WebGPU behind flag |
+| Other         | WASM (CPU)                     |
 
 WASM works everywhere: just slower. For best performance use Chrome or Edge.
 
@@ -98,52 +98,3 @@ npm run dev
 Open [http://localhost:5173](http://localhost:5173).
 
 ---
-
-## Debugging
-
-### Console
-
-On startup, the app logs:
-
-```
-[Cloak] Model init
-  Backend  : webgpu          ← or "wasm (cpu fallback)"
-  Model ID : bert-base-ner
-  Model URL: http://localhost:8080/bert-base-ner/
-  GPU      : Apple Apple M-series
-
-[Cloak] onnx/model_quantized.onnx   47%  (41.2MB / 87.3MB)
-...
-[Cloak NER] test result: [{entity: "B-PER", word: "John", score: 0.99...}]
-```
-
-The dev indicator in the top-right corner shows live download progress. It's hidden in production (`VITE_ENV != development`).
-
-### Network tab
-
-Filter requests by `8080` to watch model file downloads. If a file shows `(disk cache)` in the Size column it was served from the browser cache: the model server wasn't hit.
-
-### Cache Storage
-
-**DevTools → Application → Cache Storage**
-
-Transformers.js stores model files in the browser's Cache API under a key like `transformers-cache`. Each entry is one model file (URL → response). To test a cold load, right-click the cache and delete it, then reload.
-
-### Switching models
-
-1. Clone a different model into `./models/<new-model-id>/`
-2. Change `VITE_MODEL_ID=<new-model-id>` in `.env.local`
-3. Reload: the new model will be fetched and cached
-
-Available Xenova NER models: `bert-base-NER`, `distilbert-base-multilingual-cased-ner-hrl`
-
----
-
-## Scripts
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start dev server at localhost:5173 |
-| `npm run build` | Type-check + production build |
-| `npm run preview` | Serve the production build locally |
-| `npm run lint` | Run oxlint |

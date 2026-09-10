@@ -10,25 +10,15 @@ const STATUS_PHRASES = [
 
 const PHRASE_DURATION_MS = 1200
 
-interface CloakingOverlayProps {
-  onComplete: () => void
-}
-
-export default function CloakingOverlay({ onComplete }: CloakingOverlayProps) {
+export default function CloakingOverlay() {
   const [phraseIndex, setPhraseIndex] = useState(0)
 
   useEffect(() => {
-    if (phraseIndex >= STATUS_PHRASES.length - 1) {
-      const done = setTimeout(onComplete, PHRASE_DURATION_MS)
-      return () => clearTimeout(done)
-    }
-
     const timer = setInterval(() => {
-      setPhraseIndex((i) => i + 1)
+      setPhraseIndex((i) => (i + 1) % STATUS_PHRASES.length)
     }, PHRASE_DURATION_MS)
-
     return () => clearInterval(timer)
-  }, [phraseIndex, onComplete])
+  }, [])
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">

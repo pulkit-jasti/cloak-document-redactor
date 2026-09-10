@@ -11,10 +11,12 @@ export default function PreviewPage() {
     <div className="h-screen flex flex-col">
       {/* Fixed navbar */}
       <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b">
-        <span className="text-sm font-semibold tracking-tight">Cloak</span>
-        <p className="text-xs text-muted-foreground">
-          🔒 Your document never left your browser
-        </p>
+        <button
+          onClick={() => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); navigate('/') }}
+          className="text-sm font-semibold tracking-tight hover:opacity-60 transition-opacity"
+        >
+          Cloak
+        </button>
       </div>
 
       {/* Scrollable PDF area */}

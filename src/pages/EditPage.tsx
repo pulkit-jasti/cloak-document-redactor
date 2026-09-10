@@ -29,7 +29,12 @@ export default function EditPage() {
         >
           ← Back to preview
         </button>
-        <span className="text-sm font-semibold tracking-tight ml-auto">Cloak</span>
+        <button
+          onClick={() => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); navigate('/') }}
+          className="text-sm font-semibold tracking-tight ml-auto hover:opacity-60 transition-opacity"
+        >
+          Cloak
+        </button>
       </div>
 
       {/* Two-column layout — fills remaining height */}
