@@ -1,15 +1,15 @@
 import { useState } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { MOCK_REDACTIONS, type Redaction } from "@/constants/mockData"
+import type { Redaction } from "@/constants/mockData"
 import PdfViewer from "@/components/PdfViewer"
+import { useCloak } from "@/context/CloakContext"
 
 export default function EditPage() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const pdfUrl: string | undefined = location.state?.pdfUrl
+  const { pdfUrl, entities, reset } = useCloak()
 
-  const [redactions, setRedactions] = useState<Redaction[]>(MOCK_REDACTIONS)
+  const [redactions, setRedactions] = useState<Redaction[]>(entities ?? [])
 
   const toggleRedaction = (id: string) => {
     setRedactions((prev) =>
@@ -21,25 +21,22 @@ export default function EditPage() {
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Fixed navbar */}
       <div className="shrink-0 flex items-center gap-4 px-6 py-4 border-b">
         <button
-          onClick={() => navigate("/preview", { state: { pdfUrl } })}
+          onClick={() => navigate("/preview")}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
           ← Back to preview
         </button>
         <button
-          onClick={() => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); navigate('/') }}
+          onClick={() => { reset(); navigate('/') }}
           className="text-sm font-semibold tracking-tight ml-auto hover:opacity-60 transition-opacity"
         >
           Cloak
         </button>
       </div>
 
-      {/* Two-column layout — fills remaining height */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Left: scrollable PDF */}
         <div className="flex-1 overflow-y-auto border-r">
           <div className="max-w-2xl mx-auto px-6 py-6">
             {pdfUrl ? (
@@ -52,7 +49,6 @@ export default function EditPage() {
           </div>
         </div>
 
-        {/* Right: scrollable redaction list + fixed save CTA */}
         <div className="w-80 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-6 min-h-0">
             {pages.map((page) => (
@@ -69,9 +65,7 @@ export default function EditPage() {
                         className="flex items-center gap-2 rounded-lg border px-3 py-2 bg-card"
                       >
                         <div className="flex-1 min-w-0">
-                          <span className="text-xs text-muted-foreground">
-                            {r.type}
-                          </span>
+                          <span className="text-xs text-muted-foreground">{r.type}</span>
                           <p className="text-sm font-medium truncate">{r.value}</p>
                         </div>
                         <button
@@ -91,12 +85,8 @@ export default function EditPage() {
             ))}
           </div>
 
-          {/* Fixed save CTA */}
           <div className="shrink-0 p-4 border-t">
-            <Button
-              className="w-full"
-              onClick={() => navigate("/preview", { state: { pdfUrl } })}
-            >
+            <Button className="w-full" onClick={() => navigate("/preview")}>
               Save & Preview
             </Button>
           </div>

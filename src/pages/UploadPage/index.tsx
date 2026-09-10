@@ -1,9 +1,11 @@
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import * as pdfjsLib from "pdfjs-dist"
 import { Badge } from "@/components/ui/badge"
 import CloakingOverlay from "@/components/CloakingOverlay"
 import NERPipeline from "@/lib/nerPipeline"
+import { useCloak } from "@/context/CloakContext"
+import { MOCK_REDACTIONS } from "@/constants/mockData"
 import DropZone from "./components/DropZone"
 import FilePreview from "./components/FilePreview"
 
@@ -29,9 +31,9 @@ async function extractPdfText(url: string): Promise<string> {
 
 export default function UploadPage() {
   const navigate = useNavigate()
+  const { setPdf, setEntities } = useCloak()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isCloaking, setIsCloaking] = useState(false)
-  const pdfUrlRef = useRef<string | null>(null)
 
   const handleFileSelect = (file: File | null) => {
     if (file && file.type === "application/pdf") setSelectedFile(file)
@@ -39,20 +41,22 @@ export default function UploadPage() {
 
   const handleCloak = async () => {
     if (!selectedFile) return
-    pdfUrlRef.current = URL.createObjectURL(selectedFile)
+    const url = URL.createObjectURL(selectedFile)
+    setPdf(url)
     setIsCloaking(true)
 
     try {
-      const text = await extractPdfText(pdfUrlRef.current)
+      const text = await extractPdfText(url)
       const pipe = await NERPipeline.getInstance()
-      const entities = await pipe(text)
+      const results = await pipe(text)
       console.log("[Cloak] extracted text:", text)
-      console.log("[Cloak] NER entities:", entities)
+      console.log("[Cloak] NER results:", results)
+      setEntities(MOCK_REDACTIONS)
     } catch (err) {
       console.error("[Cloak] pipeline error:", err)
     }
 
-    navigate("/preview", { state: { pdfUrl: pdfUrlRef.current } })
+    navigate("/preview")
   }
 
   return (

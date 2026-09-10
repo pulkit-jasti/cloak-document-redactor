@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { CloakProvider } from '@/context/CloakContext';
 import UploadPage from '@/pages/UploadPage';
 import PreviewPage from '@/pages/PreviewPage';
 import EditPage from '@/pages/EditPage';
@@ -31,12 +32,14 @@ export default function App() {
 
 	return (
 		<BrowserRouter>
-			<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} />
-			<Routes>
-				<Route path='/' element={<UploadPage />} />
-				<Route path='/preview' element={<PreviewPage />} />
-				<Route path='/edit' element={<EditPage />} />
-			</Routes>
+			<CloakProvider>
+				<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} />
+				<Routes>
+					<Route path='/' element={<UploadPage />} />
+					<Route path='/preview' element={<PreviewPage />} />
+					<Route path='/edit' element={<EditPage />} />
+				</Routes>
+			</CloakProvider>
 		</BrowserRouter>
 	);
 }
