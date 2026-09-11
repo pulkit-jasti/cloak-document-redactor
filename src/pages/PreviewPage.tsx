@@ -5,7 +5,7 @@ import { useCloak } from '@/context/CloakContext';
 
 export default function PreviewPage() {
 	const navigate = useNavigate();
-	const { pdfUrl, reset } = useCloak();
+	const { pdfUrl, entities, reset } = useCloak();
 
 	return (
 		<div className='h-screen flex flex-col'>
@@ -37,6 +37,11 @@ export default function PreviewPage() {
 
 			<div className='shrink-0 border-t px-4 py-4'>
 				<div className='max-w-2xl mx-auto flex flex-col gap-3'>
+					{entities?.length === 0 && (
+						<p className='text-xs text-muted-foreground text-center'>
+							No PII detected — document appears clean.
+						</p>
+					)}
 					<Button size='lg' className='w-full'>
 						Download PDF
 					</Button>

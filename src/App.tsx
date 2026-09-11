@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CloakProvider } from '@/context/CloakContext';
 import UploadPage from '@/pages/UploadPage';
 import PreviewPage from '@/pages/PreviewPage';
@@ -9,6 +9,13 @@ import NERPipeline, {
 	ModelStatus,
 	type ProgressEvent,
 } from '@/lib/nerPipeline';
+import { useCloak } from '@/context/CloakContext';
+
+function RequirePdf({ children }: { children: React.ReactNode }) {
+	const { pdfUrl } = useCloak();
+	if (!pdfUrl) return <Navigate to='/' replace />;
+	return <>{children}</>;
+}
 
 export default function App() {
 	const [modelStatus, setModelStatus] = useState<ModelStatus>(ModelStatus.Idle);
@@ -36,8 +43,8 @@ export default function App() {
 				<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} />
 				<Routes>
 					<Route path='/' element={<UploadPage />} />
-					<Route path='/preview' element={<PreviewPage />} />
-					<Route path='/edit' element={<EditPage />} />
+					<Route path='/preview' element={<RequirePdf><PreviewPage /></RequirePdf>} />
+					<Route path='/edit' element={<RequirePdf><EditPage /></RequirePdf>} />
 				</Routes>
 			</CloakProvider>
 		</BrowserRouter>

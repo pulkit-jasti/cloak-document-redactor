@@ -51,6 +51,14 @@ export default function EditPage() {
 
         <div className="w-80 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-6 min-h-0">
+            {redactions.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-4 py-12">
+                <p className="text-sm font-medium">No PII detected</p>
+                <p className="text-xs text-muted-foreground">
+                  The document appears clean. Nothing to redact.
+                </p>
+              </div>
+            )}
             {pages.map((page) => (
               <div key={page}>
                 <p className="text-xs font-medium text-muted-foreground mb-2">

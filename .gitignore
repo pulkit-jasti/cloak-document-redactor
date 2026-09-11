@@ -25,3 +25,6 @@ dist-ssr
 *.sw?
 .claude
 models/
+
+# Misc
+test_real_pii.pdf
