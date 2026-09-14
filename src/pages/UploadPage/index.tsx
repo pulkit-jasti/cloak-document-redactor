@@ -80,7 +80,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).href
 
-async function extractPdfText(url: string): Promise<string> {
+async function extractPdfTextPerPage(url: string): Promise<string[]> {
   const pdf = await pdfjsLib.getDocument({ url }).promise
   const pages: string[] = []
 
@@ -116,7 +116,7 @@ async function extractPdfText(url: string): Promise<string> {
     pages.push(pageText)
   }
 
-  return pages.join("\n")
+  return pages
 }
 
 export default function UploadPage() {
@@ -137,41 +137,35 @@ export default function UploadPage() {
     setIsCloaking(true)
 
     try {
-      const text = await extractPdfText(url)
+      const pageTexts = await extractPdfTextPerPage(url)
       const pipe = await NERPipeline.getInstance()
-      const results = await runNer(text, pipe)
       const seen = new Set<string>()
-      const redactions: Redaction[] = results.flatMap((r) => {
-        const group = "entity_group" in r ? r.entity_group : undefined
-        if (!group) return []
-        const value = r.word.trim()
-        if (!value || value.startsWith("##") || value.length < 3) return []
-        // Skip common document label words that NER falsely tags
-        if (/^(email|phone|ssn|name|address|company|location|manager|fax|date|id)$/i.test(value)) return []
-        const key = `${group}:${value.toLowerCase()}`
-        if (seen.has(key)) return []
-        seen.add(key)
-        return [{
-          id: crypto.randomUUID(),
-          type: ENTITY_LABELS[group] ?? group,
-          value,
-          page: 1,
-          approved: true,
-        }]
-      })
+      const redactions: Redaction[] = []
 
-      const regexEntities = extractRegexEntities(text)
-      for (const { type, value } of regexEntities) {
-        const key = `${type}:${value.toLowerCase()}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        redactions.push({
-          id: crypto.randomUUID(),
-          type,
-          value,
-          page: 1,
-          approved: true,
-        })
+      for (let pageIdx = 0; pageIdx < pageTexts.length; pageIdx++) {
+        const pageNum = pageIdx + 1
+        const text = pageTexts[pageIdx]
+
+        const results = await runNer(text, pipe)
+        for (const r of results) {
+          const group = "entity_group" in r ? r.entity_group : undefined
+          if (!group) continue
+          const value = r.word.trim()
+          if (!value || value.startsWith("##") || value.length < 3) continue
+          if (/^(email|phone|ssn|name|address|company|location|manager|fax|date|id)$/i.test(value)) continue
+          const key = `${group}:${value.toLowerCase()}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          redactions.push({ id: crypto.randomUUID(), type: ENTITY_LABELS[group] ?? group, value, page: pageNum, approved: true })
+        }
+
+        const regexEntities = extractRegexEntities(text)
+        for (const { type, value } of regexEntities) {
+          const key = `${type}:${value.toLowerCase()}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          redactions.push({ id: crypto.randomUUID(), type, value, page: pageNum, approved: true })
+        }
       }
 
       setEntities(redactions)
