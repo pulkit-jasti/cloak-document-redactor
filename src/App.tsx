@@ -18,12 +18,10 @@ function RequirePdf({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-	const [modelStatus, setModelStatus] = useState<ModelStatus>(ModelStatus.Idle);
+	const [modelStatus, setModelStatus] = useState<ModelStatus>(ModelStatus.Loading);
 	const [lastEvent, setLastEvent] = useState<ProgressEvent | null>(null);
 
 	useEffect(() => {
-		setModelStatus(ModelStatus.Loading);
-
 		NERPipeline.getInstance((event) => {
 			setLastEvent(event);
 			if (event.status === ModelStatus.Ready) setModelStatus(ModelStatus.Ready);

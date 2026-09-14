@@ -1,5 +1,4 @@
 export enum ModelStatus {
-	Idle = 'idle',
 	Loading = 'loading',
 	Ready = 'ready',
 	Error = 'error',
@@ -19,20 +18,18 @@ type Props = {
 };
 
 export default function ModelLoadingIndicator({ status, lastEvent }: Props) {
-	if (!IS_DEV || status === ModelStatus.Idle) return null;
+	if (!IS_DEV) return null;
 
 	const label = {
 		[ModelStatus.Loading]: 'Model loading…',
 		[ModelStatus.Ready]: 'Model ready',
 		[ModelStatus.Error]: 'Model error',
-		[ModelStatus.Idle]: '',
 	}[status];
 
 	const dot = {
 		[ModelStatus.Loading]: 'bg-yellow-400 animate-pulse',
 		[ModelStatus.Ready]: 'bg-green-400',
 		[ModelStatus.Error]: 'bg-red-400',
-		[ModelStatus.Idle]: '',
 	}[status];
 
 	return (
