@@ -5,7 +5,7 @@ import { useCloak } from '@/context/CloakContext';
 
 export default function PreviewPage() {
 	const navigate = useNavigate();
-	const { pdfUrl, entities, reset } = useCloak();
+	const { pdfBytes, entities, reset } = useCloak();
 
 	return (
 		<div className='h-screen flex flex-col'>
@@ -23,8 +23,8 @@ export default function PreviewPage() {
 
 			<div className='flex-1 overflow-y-auto min-h-0'>
 				<div className='max-w-2xl mx-auto px-4 py-8'>
-					{pdfUrl ? (
-						<PdfViewer url={pdfUrl} />
+					{pdfBytes ? (
+						<PdfViewer pdfBytes={pdfBytes} />
 					) : (
 						<div className='rounded-xl bg-muted flex items-center justify-center min-h-120'>
 							<p className='text-sm text-muted-foreground'>

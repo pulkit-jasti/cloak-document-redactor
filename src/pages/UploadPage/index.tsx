@@ -114,7 +114,8 @@ export default function UploadPage() {
   const handleCloak = async () => {
     if (!selectedFile) return
     const url = URL.createObjectURL(selectedFile)
-    setPdf(url)
+    const bytes = new Uint8Array(await selectedFile.arrayBuffer())
+    setPdf(url, bytes)
     setIsCloaking(true)
 
     try {

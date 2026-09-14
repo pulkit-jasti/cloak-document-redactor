@@ -1,77 +1,80 @@
-import { useEffect, useRef, useState } from 'react'
-import * as pdfjsLib from 'pdfjs-dist'
-import type { PDFPageProxy } from 'pdfjs-dist'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).href
+type PageSize = { width: number; height: number }
 
-function PdfPage({ page, containerWidth }: { page: PDFPageProxy; containerWidth: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  // Prevents StrictMode's double-invocation from cancelling an in-progress render.
-  const renderStartedRef = useRef(false)
-
-  const dpr = window.devicePixelRatio || 1
-  const baseViewport = page.getViewport({ scale: 1 })
-  const cssHeight = (containerWidth / baseViewport.width) * baseViewport.height
+function PdfPage({
+  pageIndex,
+  size,
+  containerWidth,
+  src,
+  onVisible,
+}: {
+  pageIndex: number
+  size: PageSize
+  containerWidth: number
+  src: string | null
+  onVisible: (pageIndex: number) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const triggeredRef = useRef(false)
+  const cssHeight = (containerWidth / size.width) * size.height
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas || renderStartedRef.current) return
-
-    let observing = true
-    let renderTask: pdfjsLib.RenderTask | null = null
-
+    const el = ref.current
+    if (!el) return
+    triggeredRef.current = false
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting || !observing || renderStartedRef.current) return
-        observer.disconnect()
-        renderStartedRef.current = true
-
-        const scale = (containerWidth / baseViewport.width) * dpr
-        const viewport = page.getViewport({ scale })
-        canvas.width = viewport.width
-        canvas.height = viewport.height
-
-        const ctx = canvas.getContext('2d')!
-        renderTask = page.render({ canvasContext: ctx, viewport })
-        renderTask.promise.catch((e) => {
-          if (e?.name !== 'RenderingCancelledException') console.error('[PdfPage]', e)
-        })
+        if (entry.isIntersecting && !triggeredRef.current) {
+          triggeredRef.current = true
+          observer.disconnect()
+          onVisible(pageIndex)
+        }
       },
-      { rootMargin: '500px' }
+      { rootMargin: '600px' },
     )
-
-    observer.observe(canvas)
-
-    return () => {
-      observing = false
-      observer.disconnect()
-      if (!renderStartedRef.current) renderTask?.cancel()
-    }
-  }, [page, containerWidth, baseViewport.width, dpr])
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [pageIndex, onVisible])
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
+      ref={ref}
       style={{
-        display: 'block',
-        width: `${containerWidth}px`,
-        height: `${cssHeight}px`,
+        width: containerWidth,
+        height: cssHeight,
         background: 'white',
         borderRadius: 4,
+        overflow: 'hidden',
+        flexShrink: 0,
       }}
-    />
+    >
+      {src && (
+        <img
+          src={src}
+          width={containerWidth}
+          height={cssHeight}
+          style={{ display: 'block', width: '100%', height: '100%' }}
+          alt={`Page ${pageIndex + 1}`}
+          draggable={false}
+        />
+      )}
+    </div>
   )
 }
 
-export default function PdfViewer({ url }: { url: string }) {
+export default function PdfViewer({ pdfBytes }: { pdfBytes: Uint8Array | null }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [pages, setPages] = useState<PDFPageProxy[]>([])
+  const workerRef = useRef<Worker | null>(null)
+  const msgIdRef = useRef(0)
+  const blobUrlsRef = useRef<string[]>([])
+
   const [containerWidth, setContainerWidth] = useState(0)
+  const [pageSizes, setPageSizes] = useState<PageSize[]>([])
+  const [pageSrcs, setPageSrcs] = useState<(string | null)[]>([])
   const [error, setError] = useState<string | null>(null)
 
+  // Track container width
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -81,31 +84,79 @@ export default function PdfViewer({ url }: { url: string }) {
     return () => ro.disconnect()
   }, [])
 
+  // Create worker once
   useEffect(() => {
-    if (!url) return
-    let cancelled = false
-    setPages([])
+    console.log('[PdfViewer] creating worker')
+    const worker = new Worker(
+      new URL('../workers/mupdf.worker.ts', import.meta.url),
+      { type: 'module' },
+    )
+    workerRef.current = worker
+
+    worker.onmessage = (e) => {
+      console.log('[PdfViewer] worker message:', e.data.type)
+      const msg = e.data
+      if (msg.type === 'loaded') {
+        const sizes: PageSize[] = (msg.pageSizes as [number, number][]).map(([w, h]) => ({
+          width: w,
+          height: h,
+        }))
+        setPageSizes(sizes)
+        setPageSrcs(new Array(msg.pageCount as number).fill(null))
+      } else if (msg.type === 'rendered') {
+        const blob = new Blob([msg.png as Uint8Array], { type: 'image/png' })
+        const url = URL.createObjectURL(blob)
+        blobUrlsRef.current.push(url)
+        setPageSrcs((prev) => {
+          const next = [...prev]
+          next[msg.pageIndex as number] = url
+          return next
+        })
+      } else if (msg.type === 'error') {
+        console.error('[MuPDF Worker]', msg.message)
+        setError(msg.message as string)
+      }
+    }
+
+    worker.onerror = (e) => {
+      console.error('[MuPDF Worker] uncaught error', e)
+      setError('PDF renderer failed to load.')
+    }
+
+    return () => {
+      worker.terminate()
+      workerRef.current = null
+      blobUrlsRef.current.forEach(URL.revokeObjectURL)
+      blobUrlsRef.current = []
+    }
+  }, [])
+
+  // Load document when bytes change
+  useEffect(() => {
+    console.log('[PdfViewer] load effect: pdfBytes=', !!pdfBytes, 'worker=', !!workerRef.current)
+    if (!pdfBytes || !workerRef.current) return
+    setPageSizes([])
+    setPageSrcs([])
     setError(null)
+    blobUrlsRef.current.forEach(URL.revokeObjectURL)
+    blobUrlsRef.current = []
+    const id = msgIdRef.current++
+    workerRef.current.postMessage({ id, type: 'load', bytes: pdfBytes })
+  }, [pdfBytes])
 
-    pdfjsLib
-      .getDocument({ url })
-      .promise.then(async (pdf) => {
-        const loaded: PDFPageProxy[] = []
-        for (let i = 1; i <= pdf.numPages; i++) {
-          if (cancelled) return
-          loaded.push(await pdf.getPage(i))
-        }
-        if (!cancelled) setPages(loaded)
-      })
-      .catch((e) => {
-        if (!cancelled) {
-          console.error('[PdfViewer]', e)
-          setError('Failed to load PDF.')
-        }
-      })
-
-    return () => { cancelled = true }
-  }, [url])
+  const handlePageVisible = useCallback(
+    (pageIndex: number) => {
+      const worker = workerRef.current
+      if (!worker || containerWidth === 0) return
+      const size = pageSizes[pageIndex]
+      if (!size) return
+      const dpr = window.devicePixelRatio || 1
+      const scale = (containerWidth / size.width) * dpr
+      const id = msgIdRef.current++
+      worker.postMessage({ id, type: 'render', pageIndex, scale })
+    },
+    [containerWidth, pageSizes],
+  )
 
   if (error) {
     return (
@@ -117,13 +168,22 @@ export default function PdfViewer({ url }: { url: string }) {
 
   return (
     <div ref={containerRef} className="w-full flex flex-col gap-3">
-      {pages.length > 0 && containerWidth > 0 ? (
-        pages.map((page, i) => (
-          <PdfPage key={i} page={page} containerWidth={containerWidth} />
+      {pageSizes.length > 0 && containerWidth > 0 ? (
+        pageSizes.map((size, i) => (
+          <PdfPage
+            key={i}
+            pageIndex={i}
+            size={size}
+            containerWidth={containerWidth}
+            src={pageSrcs[i] ?? null}
+            onVisible={handlePageVisible}
+          />
         ))
       ) : (
         <div className="flex items-center justify-center py-20">
-          <p className="text-sm text-muted-foreground">Loading PDF...</p>
+          <p className="text-sm text-muted-foreground">
+            {pdfBytes ? 'Rendering PDF…' : 'No document loaded.'}
+          </p>
         </div>
       )}
     </div>
