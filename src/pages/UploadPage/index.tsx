@@ -17,6 +17,24 @@ const ENTITY_LABELS: Record<string, string> = {
   MISC: "Miscellaneous",
 }
 
+const REGEX_PATTERNS: Array<{ type: string; pattern: RegExp }> = [
+  { type: "Email", pattern: /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g },
+  { type: "Phone", pattern: /(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g },
+  { type: "SSN", pattern: /\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/g },
+]
+
+function extractRegexEntities(text: string): Array<{ type: string; value: string }> {
+  const results: Array<{ type: string; value: string }> = []
+  for (const { type, pattern } of REGEX_PATTERNS) {
+    const matches = text.matchAll(new RegExp(pattern.source, "g"))
+    for (const match of matches) {
+      const value = match[0].trim()
+      if (value) results.push({ type, value })
+    }
+  }
+  return results
+}
+
 // BERT max is 512 tokens; chunk text into ~400 word segments with overlap
 // so PII anywhere in a long document is still found.
 const CHUNK_WORDS = 200
@@ -127,7 +145,9 @@ export default function UploadPage() {
         const group = "entity_group" in r ? r.entity_group : undefined
         if (!group) return []
         const value = r.word.trim()
-        if (!value || value.startsWith("##")) return []
+        if (!value || value.startsWith("##") || value.length < 3) return []
+        // Skip common document label words that NER falsely tags
+        if (/^(email|phone|ssn|name|address|company|location|manager|fax|date|id)$/i.test(value)) return []
         const key = `${group}:${value.toLowerCase()}`
         if (seen.has(key)) return []
         seen.add(key)
@@ -139,6 +159,21 @@ export default function UploadPage() {
           approved: true,
         }]
       })
+
+      const regexEntities = extractRegexEntities(text)
+      for (const { type, value } of regexEntities) {
+        const key = `${type}:${value.toLowerCase()}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        redactions.push({
+          id: crypto.randomUUID(),
+          type,
+          value,
+          page: 1,
+          approved: true,
+        })
+      }
+
       setEntities(redactions)
     } catch (err) {
       console.error("[Cloak] pipeline error:", err)

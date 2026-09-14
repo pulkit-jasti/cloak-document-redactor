@@ -7,7 +7,7 @@ import { useCloak } from '@/context/CloakContext';
 
 export default function EditPage() {
 	const navigate = useNavigate();
-	const { pdfBytes, entities, reset } = useCloak();
+	const { pdfBytes, redactedBytes, entities, setEntities, reset } = useCloak();
 
 	const [redactions, setRedactions] = useState<Redaction[]>(entities ?? []);
 
@@ -44,8 +44,8 @@ export default function EditPage() {
 			<div className='flex-1 flex overflow-hidden min-h-0'>
 				<div className='flex-1 overflow-y-auto border-r'>
 					<div className='max-w-2xl mx-auto px-6 py-6'>
-						{pdfBytes ? (
-							<PdfViewer pdfBytes={pdfBytes} />
+						{(redactedBytes ?? pdfBytes) ? (
+							<PdfViewer pdfBytes={redactedBytes ?? pdfBytes!} />
 						) : (
 							<div className='rounded-xl bg-muted flex items-center justify-center min-h-120'>
 								<p className='text-sm text-muted-foreground'>
@@ -105,9 +105,12 @@ export default function EditPage() {
 					</div>
 
 					<div className='shrink-0 p-4 border-t'>
-						<Button className='w-full' onClick={() => navigate('/preview')}>
-							Save & Preview
-						</Button>
+						<Button
+						className='w-full'
+						onClick={() => { setEntities(redactions); navigate('/preview') }}
+					>
+						Save & Preview
+					</Button>
 					</div>
 				</div>
 			</div>
