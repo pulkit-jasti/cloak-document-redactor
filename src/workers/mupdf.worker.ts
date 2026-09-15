@@ -6,10 +6,11 @@ function getMupdf() {
   return mupdfPromise
 }
 
-type LoadMsg   = { id: number; type: 'load';   bytes: Uint8Array }
-type RenderMsg = { id: number; type: 'render'; pageIndex: number; scale: number }
-type RedactMsg = { id: number; type: 'redact'; bytes: Uint8Array; entities: string[] }
-type WorkerInMsg = LoadMsg | RenderMsg | RedactMsg
+type LoadMsg       = { id: number; type: 'load';       bytes: Uint8Array }
+type RenderMsg     = { id: number; type: 'render';     pageIndex: number; scale: number }
+type SearchPageMsg = { id: number; type: 'searchPage'; pageIndex: number; values: string[] }
+type RedactMsg     = { id: number; type: 'redact';     bytes: Uint8Array; entities: string[] }
+type WorkerInMsg   = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let doc: any = null
@@ -47,6 +48,29 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
         { id: msg.id, type: 'rendered', pageIndex: msg.pageIndex, png },
         [png.buffer as ArrayBuffer],
       )
+
+    } else if (msg.type === 'searchPage') {
+      if (!doc) throw new Error('No document loaded')
+      const page = doc.loadPage(msg.pageIndex)
+      // Returns value -> list of bounding rects [x0, y0, x1, y1] in PDF units
+      const results: Record<string, [number, number, number, number][]> = {}
+      for (const value of msg.values) {
+        if (!value.trim()) continue
+        const hits = page.search(value) as number[][][]
+        const rects: [number, number, number, number][] = []
+        for (const quads of hits) {
+          for (const quad of quads) {
+            const x0 = Math.min(quad[0], quad[2], quad[4], quad[6])
+            const y0 = Math.min(quad[1], quad[3], quad[5], quad[7])
+            const x1 = Math.max(quad[0], quad[2], quad[4], quad[6])
+            const y1 = Math.max(quad[1], quad[3], quad[5], quad[7])
+            rects.push([x0, y0, x1, y1])
+          }
+        }
+        if (rects.length > 0) results[value] = rects
+      }
+      page.destroy()
+      self.postMessage({ id: msg.id, type: 'searchResult', pageIndex: msg.pageIndex, results })
 
     } else if (msg.type === 'redact') {
       // Open a fresh copy of the document so we don't mutate the viewer's doc
