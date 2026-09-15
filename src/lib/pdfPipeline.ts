@@ -1,7 +1,7 @@
 import * as pdfjsLib from "pdfjs-dist"
 import NERPipeline from "@/lib/nerPipeline"
 import type { TokenClassificationPipeline } from "@huggingface/transformers"
-import type { Redaction } from "@/constants/mockData"
+import type { Redaction } from "@/types"
 
 export const ENTITY_LABELS: Record<string, string> = {
   PER: "Person",

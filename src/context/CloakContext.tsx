@@ -1,5 +1,5 @@
 import { createContext, useContext, useRef, useState } from "react"
-import type { Redaction } from "@/constants/mockData"
+import type { Redaction } from "@/types"
 
 export type { Redaction }
 

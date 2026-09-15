@@ -1,4 +1,4 @@
-import type { Redaction } from '@/constants/mockData'
+import type { Redaction } from '@/types'
 
 interface Props {
   redaction: Redaction

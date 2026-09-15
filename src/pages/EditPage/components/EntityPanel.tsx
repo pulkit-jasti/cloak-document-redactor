@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import type { Redaction } from '@/constants/mockData'
+import type { Redaction } from '@/types'
 import EntityCard from './EntityCard'
 
 interface Props {

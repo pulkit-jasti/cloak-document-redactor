@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { Redaction } from '@/constants/mockData'
+import type { Redaction } from '@/types'
 import PdfViewer from '@/components/PdfViewer'
 import { useCloak } from '@/context/CloakContext'
 import { redactPdf } from '@/lib/redactPdf'
