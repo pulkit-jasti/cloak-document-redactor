@@ -24,11 +24,11 @@ export default function FilePreview({ file, isCloaking, onRemove, onCloak }: Fil
 
       <Button
         size="lg"
-        className="w-full gap-2 shadow-[0_0_20px_hsl(var(--primary)/0.35)]"
+        className="group w-full gap-2 shadow-[0_0_20px_hsl(var(--primary)/0.35)] transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_32px_hsl(var(--primary)/0.55)]"
         onClick={onCloak}
         disabled={isCloaking}
       >
-        ✦ Cloak it
+        <span className="inline-block text-xl group-hover:[animation:spin_1.5s_linear_infinite]">✦</span> Cloak it
       </Button>
     </div>
   )

@@ -6,9 +6,10 @@ interface Props {
   redactions: Redaction[]
   onToggle: (id: string) => void
   onSave: () => void
+  isSaving?: boolean
 }
 
-export default function EntityPanel({ redactions, onToggle, onSave }: Props) {
+export default function EntityPanel({ redactions, onToggle, onSave, isSaving }: Props) {
   const pages = [...new Set(redactions.map((r) => r.page))].sort((a, b) => a - b)
 
   return (
@@ -37,8 +38,8 @@ export default function EntityPanel({ redactions, onToggle, onSave }: Props) {
       </div>
 
       <div className='shrink-0 p-4 border-t'>
-        <Button className='w-full' onClick={onSave}>
-          Save & Preview
+        <Button className='w-full' onClick={onSave} disabled={isSaving}>
+          {isSaving ? 'Applying redactions…' : 'Save & Preview'}
         </Button>
       </div>
     </div>
