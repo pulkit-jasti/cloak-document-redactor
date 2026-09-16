@@ -5,12 +5,20 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import UploadPage from '@/pages/UploadPage';
 import PreviewPage from '@/pages/PreviewPage';
 import EditPage from '@/pages/EditPage';
+import MobileGate from '@/components/MobileGate';
 import ModelLoadingIndicator from '@/components/ModelLoadingIndicator';
 import NERPipeline, {
 	ModelStatus,
 	type ProgressEvent,
 } from '@/lib/nerPipeline';
 import { useCloak } from '@/context/CloakContext';
+
+const isMobile = (() => {
+	if (navigator.userAgentData?.mobile !== undefined) {
+		return navigator.userAgentData.mobile;
+	}
+	return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
+})();
 
 function RequirePdf({ children }: { children: React.ReactNode }) {
 	const { pdfUrl } = useCloak();
@@ -23,6 +31,7 @@ export default function App() {
 	const [lastEvent, setLastEvent] = useState<ProgressEvent | null>(null);
 
 	useEffect(() => {
+		if (isMobile) return;
 		NERPipeline.getInstance((event) => {
 			setLastEvent(event);
 			if (event.status === ModelStatus.Ready) setModelStatus(ModelStatus.Ready);
@@ -35,6 +44,8 @@ export default function App() {
 				setModelStatus(ModelStatus.Error);
 			});
 	}, []);
+
+	if (isMobile) return <MobileGate />;
 
 	return (
 		<ThemeProvider>
