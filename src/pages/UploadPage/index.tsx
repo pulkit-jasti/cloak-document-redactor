@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import CloakingOverlay from "@/components/CloakingOverlay"
+import Navbar from "@/components/Navbar"
 import { useCloak } from "@/context/CloakContext"
 import { extractPdfTextPerPage, detectPii } from "@/lib/pdfPipeline"
 import { redactPdf } from "@/lib/redactPdf"
@@ -44,35 +45,35 @@ export default function UploadPage() {
     <>
       {isCloaking && <CloakingOverlay />}
 
-      <div className="min-h-screen flex flex-col items-center justify-center px-4">
-        <button className="absolute top-6 left-6 text-sm font-semibold tracking-tight hover:opacity-60 transition-opacity cursor-pointer">
-          Cloak
-        </button>
+      <div className="h-screen flex flex-col">
+        <Navbar />
 
-        <div className="w-full max-w-md flex flex-col items-center gap-10 text-center">
-          <Badge variant="outline" className="text-sm px-5 py-2">
-            🔒 100% local. Your document never leaves your device.
-          </Badge>
+        <div className="flex-1 flex flex-col items-center justify-center px-4">
+          <div className="w-full max-w-md flex flex-col items-center gap-10 text-center">
+            <Badge variant="outline" className="text-sm px-5 py-2">
+              🔒 100% local. Your document never leaves your device.
+            </Badge>
 
-          <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-semibold tracking-tight">
-              Cloak your document before sharing with AI
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              PII is detected and redacted locally. No uploads, no servers, no cloud.
-            </p>
+            <div className="flex flex-col gap-2">
+              <h1 className="text-3xl font-semibold tracking-tight">
+                Cloak your document before sharing with AI
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                PII is detected and redacted locally. No uploads, no servers, no cloud.
+              </p>
+            </div>
+
+            {selectedFile ? (
+              <FilePreview
+                file={selectedFile}
+                isCloaking={isCloaking}
+                onRemove={() => setSelectedFile(null)}
+                onCloak={handleCloak}
+              />
+            ) : (
+              <DropZone onFileSelect={handleFileSelect} />
+            )}
           </div>
-
-          {selectedFile ? (
-            <FilePreview
-              file={selectedFile}
-              isCloaking={isCloaking}
-              onRemove={() => setSelectedFile(null)}
-              onCloak={handleCloak}
-            />
-          ) : (
-            <DropZone onFileSelect={handleFileSelect} />
-          )}
         </div>
       </div>
     </>

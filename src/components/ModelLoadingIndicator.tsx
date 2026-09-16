@@ -33,7 +33,7 @@ export default function ModelLoadingIndicator({ status, lastEvent }: Props) {
 	}[status];
 
 	return (
-		<div className='fixed top-3 right-3 z-50 flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-sm font-mono'>
+		<div className='fixed bottom-3 left-3 z-50 flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-sm font-mono'>
 			<span className={`size-1.5 rounded-full ${dot}`} />
 			<span>{label}</span>
 			{status === ModelStatus.Loading && lastEvent?.progress != null && (

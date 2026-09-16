@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Redaction } from '@/types';
+import Navbar from '@/components/Navbar';
 import PdfViewer from '@/components/PdfViewer';
 import { useCloak } from '@/context/CloakContext';
 import { redactPdf } from '@/lib/redactPdf';
@@ -8,7 +9,7 @@ import EntityPanel from './components/EntityPanel';
 
 export default function EditPage() {
 	const navigate = useNavigate();
-	const { pdfBytes, entities, setEntities, setRedactedBytes, reset } =
+	const { pdfBytes, entities, setEntities, setRedactedBytes } =
 		useCloak();
 
 	const [redactions, setRedactions] = useState<Redaction[]>(entities ?? []);
@@ -40,23 +41,14 @@ export default function EditPage() {
 
 	return (
 		<div className='h-screen flex flex-col'>
-			<div className='shrink-0 flex items-center gap-4 px-6 py-4 border-b'>
+			<Navbar>
 				<button
 					onClick={() => navigate('/preview')}
 					className='text-sm text-muted-foreground hover:text-foreground'
 				>
 					← Back to preview
 				</button>
-				<button
-					onClick={() => {
-						reset();
-						navigate('/');
-					}}
-					className='text-sm font-semibold tracking-tight ml-auto hover:opacity-60 transition-opacity cursor-pointer'
-				>
-					Cloak
-				</button>
-			</div>
+			</Navbar>
 
 			<div className='flex-1 flex overflow-hidden min-h-0'>
 				<div className='flex-1 overflow-y-auto border-r bg-neutral-50 dark:bg-neutral-900'>

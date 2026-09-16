@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CloakProvider } from '@/context/CloakContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import UploadPage from '@/pages/UploadPage';
 import PreviewPage from '@/pages/PreviewPage';
 import EditPage from '@/pages/EditPage';
@@ -36,15 +37,17 @@ export default function App() {
 	}, []);
 
 	return (
-		<BrowserRouter>
-			<CloakProvider>
-				<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} />
-				<Routes>
-					<Route path='/' element={<UploadPage />} />
-					<Route path='/preview' element={<RequirePdf><PreviewPage /></RequirePdf>} />
-					<Route path='/edit' element={<RequirePdf><EditPage /></RequirePdf>} />
-				</Routes>
-			</CloakProvider>
-		</BrowserRouter>
+		<ThemeProvider>
+			<BrowserRouter>
+				<CloakProvider>
+					<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} />
+					<Routes>
+						<Route path='/' element={<UploadPage />} />
+						<Route path='/preview' element={<RequirePdf><PreviewPage /></RequirePdf>} />
+						<Route path='/edit' element={<RequirePdf><EditPage /></RequirePdf>} />
+					</Routes>
+				</CloakProvider>
+			</BrowserRouter>
+		</ThemeProvider>
 	);
 }

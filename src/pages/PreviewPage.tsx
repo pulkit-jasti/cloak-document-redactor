@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import Navbar from '@/components/Navbar'
 import PdfViewer from '@/components/PdfViewer'
 import { useCloak } from '@/context/CloakContext'
 
 export default function PreviewPage() {
   const navigate = useNavigate()
-  const { pdfBytes, redactedBytes, entities, reset } = useCloak()
+  const { pdfBytes, redactedBytes, entities } = useCloak()
 
   const handleDownload = () => {
     const bytes = redactedBytes
@@ -23,14 +24,7 @@ export default function PreviewPage() {
 
   return (
     <div className='h-screen flex flex-col'>
-      <div className='shrink-0 flex items-center justify-between px-6 py-4 border-b'>
-        <button
-          onClick={() => { reset(); navigate('/') }}
-          className='text-sm font-semibold tracking-tight hover:opacity-60 transition-opacity cursor-pointer'
-        >
-          Cloak
-        </button>
-      </div>
+      <Navbar />
 
       <div className='flex-1 overflow-y-auto min-h-0 bg-neutral-50 dark:bg-neutral-900'>
         <div className='max-w-2xl mx-auto px-4 py-8'>
