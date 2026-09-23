@@ -1,0 +1,24 @@
+{
+  "source": "academic-paper-arxiv.pdf",
+  "pii": [
+    { "value": "Ashish Vaswani", "type": "person" },
+    { "value": "Noam Shazeer", "type": "person" },
+    { "value": "Niki Parmar", "type": "person" },
+    { "value": "Jakob Uszkoreit", "type": "person" },
+    { "value": "Llion Jones", "type": "person" },
+    { "value": "Aidan N. Gomez", "type": "person" },
+    { "value": "Łukasz Kaiser", "type": "person" },
+    { "value": "Illia Polosukhin", "type": "person" },
+    { "value": "avaswani@google.com", "type": "email" },
+    { "value": "noam@google.com", "type": "email" },
+    { "value": "nikip@google.com", "type": "email" },
+    { "value": "usz@google.com", "type": "email" },
+    { "value": "llion@google.com", "type": "email" },
+    { "value": "aidan@cs.toronto.edu", "type": "email" },
+    { "value": "lukaszkaiser@google.com", "type": "email" },
+    { "value": "illia.polosukhin@gmail.com", "type": "email" },
+    { "value": "Google Brain", "type": "organization" },
+    { "value": "Google Research", "type": "organization" },
+    { "value": "University of Toronto", "type": "organization" }
+  ]
+}

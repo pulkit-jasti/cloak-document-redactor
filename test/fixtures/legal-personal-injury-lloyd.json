@@ -1,0 +1,24 @@
+{
+  "source": "legal-personal-injury-lloyd.pdf",
+  "pii": [
+    { "value": "Diane Noel Lloyd", "type": "person" },
+    { "value": "Allison C. Worden", "type": "person" },
+    { "value": "Max E. Halpern", "type": "person" },
+    { "value": "Mark Skeels", "type": "person" },
+    { "value": "Gomez Trial Attorneys", "type": "organization" },
+    { "value": "City of San Diego", "type": "organization" },
+    { "value": "655 W. Broadway, Suite 1700, San Diego, CA 92101", "type": "location" },
+    { "value": "5052 Clairemont Drive, San Diego, California 92117", "type": "location" },
+    { "value": "Clairemont Drive and Cole Street", "type": "location" },
+    { "value": "619-237-3490", "type": "phone" },
+    { "value": "619-237-3496", "type": "phone" },
+    { "value": "aworden@thegomezfirm.com", "type": "email" },
+    { "value": "mhalpern@thegomezfirm.com", "type": "email" },
+    { "value": "December 30, 2020", "type": "date" },
+    { "value": "November 2021", "type": "date" },
+    { "value": "SBN: 211104", "type": "identifier" },
+    { "value": "SBN: 305097", "type": "identifier" },
+    { "value": "SBN: 209766", "type": "identifier" },
+    { "value": "37-2021-00048939-CU-PO-CTL", "type": "identifier" }
+  ]
+}

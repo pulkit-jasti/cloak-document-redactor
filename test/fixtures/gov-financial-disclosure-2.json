@@ -1,0 +1,23 @@
+{
+  "source": "gov-financial-disclosure-2.pdf",
+  "pii": [
+    { "value": "James Michael Johnson", "type": "person" },
+    { "value": "Onward Christian Education Services", "type": "organization" },
+    { "value": "Liberty University, Inc.", "type": "organization" },
+    { "value": "Citizens National Bank", "type": "organization" },
+    { "value": "The Center for Religious Expression", "type": "organization" },
+    { "value": "LA04", "type": "identifier" },
+    { "value": "08/13/2024", "type": "date" },
+    { "value": "February 2013", "type": "date" },
+    { "value": "July 2016", "type": "date" },
+    { "value": "Feb. 2019", "type": "date" },
+    { "value": "08/24/2023", "type": "date" },
+    { "value": "08/25/2023", "type": "date" },
+    { "value": "Shreveport, LA", "type": "location" },
+    { "value": "Memphis, TN", "type": "location" },
+    { "value": "$29,890.00", "type": "financial" },
+    { "value": "$250,001 - $500,000", "type": "financial" },
+    { "value": "$15,001 - $50,000", "type": "financial" },
+    { "value": "10059254", "type": "identifier" }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "source": "legal-echr-judgment.pdf",
+  "pii": [
+    { "value": "Ján SARKOCY", "type": "person" },
+    { "value": "Péter Paczolay", "type": "person" },
+    { "value": "Alena Poláčková", "type": "person" },
+    { "value": "Gilberto Felici", "type": "person" },
+    { "value": "Viktoriya Maradudina", "type": "person" },
+    { "value": "European Court of Human Rights", "type": "organization" },
+    { "value": "Strasbourg", "type": "location" },
+    { "value": "Slovakia", "type": "location" },
+    { "value": "Bratislava", "type": "location" },
+    { "value": "20 May 2021", "type": "date" },
+    { "value": "22 April 2021", "type": "date" },
+    { "value": "11 November 2019", "type": "date" },
+    { "value": "8 December 2006", "type": "date" },
+    { "value": "1953", "type": "date" },
+    { "value": "8,200", "type": "financial" },
+    { "value": "1,000 EUR", "type": "financial" },
+    { "value": "62753/19", "type": "identifier" }
+  ]
+}
