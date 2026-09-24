@@ -4,7 +4,7 @@ import os from 'os'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { extractText } from './helpers/extractText'
-import { writeResults } from './helpers/results'
+import { writeResults, readModelId } from './helpers/results'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PDF_PATH = path.resolve(__dirname, '../test_basic.pdf')
@@ -35,9 +35,9 @@ test('smoke: pipeline runs end-to-end without errors', async ({ page }) => {
   expect(text.length, 'Redacted PDF should contain extractable text').toBeGreaterThan(0)
 
   writeResults({
+    totals: { fixture_items: 0, redacted: 0, missed: 0, catch_rate: 0 },
+    model: { id: readModelId() },
     timestamp: new Date().toISOString(),
-    mode: 'smoke',
-    model: { id: 'unknown' },
     pdfs: [{
       source: 'test_basic.pdf',
       fixture_count: 0,
@@ -46,6 +46,5 @@ test('smoke: pipeline runs end-to-end without errors', async ({ page }) => {
       catch_rate: 0,
       errors: jsErrors,
     }],
-    totals: { fixture_items: 0, redacted: 0, missed: 0, catch_rate: 0 },
-  }, 'smoke')
+  })
 })
