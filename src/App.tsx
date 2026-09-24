@@ -13,12 +13,9 @@ import NERPipeline, {
 } from '@/lib/nerPipeline';
 import { useCloak } from '@/context/CloakContext';
 
-const isMobile = (() => {
-	if (navigator.userAgentData?.mobile !== undefined) {
-		return navigator.userAgentData.mobile;
-	}
-	return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
-})();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isMobile = (navigator as any).userAgentData?.mobile
+	?? /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
 
 function RequirePdf({ children }: { children: React.ReactNode }) {
 	const { pdfUrl } = useCloak();

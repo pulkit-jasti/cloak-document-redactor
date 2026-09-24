@@ -205,7 +205,7 @@ export default function PdfViewer({
         setPageRects(new Map())
         triggerSearch(msg.pageCount as number)
       } else if (msg.type === 'rendered') {
-        const blob = new Blob([msg.png as Uint8Array], { type: 'image/png' })
+        const blob = new Blob([msg.png as Uint8Array<ArrayBuffer>], { type: 'image/png' })
         const url = URL.createObjectURL(blob)
         blobUrlsRef.current.push(url)
         setPageSrcs((prev) => {

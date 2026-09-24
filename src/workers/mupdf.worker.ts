@@ -1,3 +1,5 @@
+import type { Document as MupdfDocument, PDFDocument, PDFPage } from 'mupdf'
+
 // Use dynamic import to avoid top-level await blocking onmessage registration.
 // Chrome drops messages sent to module workers before top-level awaits resolve.
 let mupdfPromise: Promise<typeof import('mupdf')> | null = null
@@ -12,8 +14,7 @@ type SearchPageMsg = { id: number; type: 'searchPage'; pageIndex: number; values
 type RedactMsg     = { id: number; type: 'redact';     bytes: Uint8Array; entities: string[] }
 type WorkerInMsg   = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let doc: any = null
+let doc: MupdfDocument | null = null
 
 self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
   const mupdf = await getMupdf()
@@ -46,7 +47,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
       page.destroy()
       self.postMessage(
         { id: msg.id, type: 'rendered', pageIndex: msg.pageIndex, png },
-        [png.buffer as ArrayBuffer],
+        { transfer: [png.buffer as ArrayBuffer] },
       )
 
     } else if (msg.type === 'searchPage') {
@@ -74,7 +75,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
 
     } else if (msg.type === 'redact') {
       // Open a fresh copy of the document so we don't mutate the viewer's doc
-      const pdfDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf')
+      const pdfDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf') as PDFDocument
       const pageCount = pdfDoc.countPages()
 
       for (let i = 0; i < pageCount; i++) {
@@ -83,11 +84,11 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
 
         for (const entity of msg.entities) {
           if (!entity.trim()) continue
-          const hits = page.search(entity)
+          const hits = (page as PDFPage).search(entity, 100)
           for (const quads of hits) {
             for (const quad of quads) {
               // quad is a flat 8-float array: [ul.x, ul.y, ur.x, ur.y, ll.x, ll.y, lr.x, lr.y]
-              const annot = page.createAnnotation('Redact')
+              const annot = (page as PDFPage).createAnnotation('Redact')
               const x0 = Math.min(quad[0], quad[2], quad[4], quad[6])
               const y0 = Math.min(quad[1], quad[3], quad[5], quad[7])
               const x1 = Math.max(quad[0], quad[2], quad[4], quad[6])
@@ -99,7 +100,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
         }
 
         if (hasAnnotation) {
-          page.applyRedactions()
+          (page as PDFPage).applyRedactions()
         }
         page.destroy()
       }
@@ -111,7 +112,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
 
       self.postMessage(
         { id: msg.id, type: 'redacted', bytes: output },
-        [output.buffer as ArrayBuffer],
+        { transfer: [output.buffer as ArrayBuffer] },
       )
     }
   } catch (err) {
