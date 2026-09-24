@@ -29,3 +29,6 @@ models/
 
 # Misc
 test_real_pii.pdf
+test/results/
+playwright-report/
+test-results/

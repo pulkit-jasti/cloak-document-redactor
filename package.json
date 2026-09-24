@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "models": "serve models -p 8080 --cors",
     "preview": "vite preview",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:smoke": "playwright test smoke",
+    "test:report": "playwright test report"
   },
   "lint-staged": {
     "*.{ts,tsx}": "eslint --max-warnings=0"
@@ -31,8 +33,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.13.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
