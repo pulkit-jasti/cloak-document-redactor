@@ -1,0 +1,54 @@
+{
+  "source": "resume-collection-ucdavis.pdf",
+  "pii": [
+    { "value": "Analyn Ocampo", "type": "person" },
+    { "value": "(559) 555-5683", "type": "phone" },
+    { "value": "aocampo@ucdavis.edu", "type": "email" },
+    { "value": "Davis, CA 95616", "type": "location" },
+    { "value": "Sanger, CA", "type": "location" },
+    { "value": "T & T Electronics", "type": "organization" },
+
+    { "value": "Mohamed Singh", "type": "person" },
+    { "value": "(408) 555-2256", "type": "phone" },
+    { "value": "Mohamed.Singh@ucdavis.edu", "type": "email" },
+    { "value": "CAL Internet Services, Inc.", "type": "organization" },
+    { "value": "State Senate Office of International Relations", "type": "organization" },
+    { "value": "Sacramento, CA", "type": "location" },
+    { "value": "San Jose, CA", "type": "location" },
+
+    { "value": "Jamar Jackson", "type": "person" },
+    { "value": "(916) 555-4673", "type": "phone" },
+    { "value": "jjackson@ucdavis.edu", "type": "email" },
+    { "value": "Sacramento, California 95819", "type": "location" },
+    { "value": "In-N-Out Burger", "type": "organization" },
+    { "value": "Yolo County SPCA", "type": "organization" },
+
+    { "value": "Grant Do", "type": "person" },
+    { "value": "(408) 888-4623", "type": "phone" },
+    { "value": "gdo@ucdavis.edu", "type": "email" },
+    { "value": "Oakland Housing Authority", "type": "organization" },
+    { "value": "National Labor Relations Board", "type": "organization" },
+    { "value": "United Nations", "type": "organization" },
+    { "value": "Oakland, CA", "type": "location" },
+    { "value": "New York, NY", "type": "location" },
+    { "value": "San Francisco, CA", "type": "location" },
+    { "value": "$22.00/hour", "type": "financial" },
+    { "value": "$20.00/hour", "type": "financial" },
+    { "value": "$12.75/hour", "type": "financial" },
+
+    { "value": "Jamal K. Washington", "type": "person" },
+    { "value": "(530) 555-2230", "type": "phone" },
+    { "value": "jkwashington@ucdavis.edu", "type": "email" },
+    { "value": "linkedin.com/in/jkwashington", "type": "identifier" },
+    { "value": "github.com/washington", "type": "identifier" },
+    { "value": "Anuvu, Inc.", "type": "organization" },
+    { "value": "Medtronic Vascular, Inc.", "type": "organization" },
+    { "value": "Hunter Innovations, Inc.", "type": "organization" },
+    { "value": "Ames Co /Fluid Control Systems", "type": "organization" },
+    { "value": "Santa Rosa, CA", "type": "location" },
+    { "value": "Berkeley, CA", "type": "location" },
+
+    { "value": "University of California, Davis", "type": "organization" },
+    { "value": "University of California, Berkeley", "type": "organization" }
+  ]
+}

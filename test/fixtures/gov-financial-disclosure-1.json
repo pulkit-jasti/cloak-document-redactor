@@ -1,0 +1,23 @@
+{
+  "source": "gov-financial-disclosure-1.pdf",
+  "pii": [
+    { "value": "Ilhan Omar", "type": "person" },
+    { "value": "ESTCRU LLC", "type": "organization" },
+    { "value": "Rose Lake Capital LLC", "type": "organization" },
+    { "value": "Congressional Credit Union", "type": "organization" },
+    { "value": "Minnesota State Retirement System", "type": "organization" },
+    { "value": "Ameriprise", "type": "organization" },
+    { "value": "Nelnet Loan Services Inc", "type": "organization" },
+    { "value": "Chase Bank", "type": "organization" },
+    { "value": "Citi Bank", "type": "organization" },
+    { "value": "Guideline 401(k)", "type": "organization" },
+    { "value": "Santa Rosa CA", "type": "location" },
+    { "value": "Washington DC", "type": "location" },
+    { "value": "05/14/2024", "type": "date" },
+    { "value": "October 2005", "type": "date" },
+    { "value": "August 2019", "type": "date" },
+    { "value": "December 2022", "type": "date" },
+    { "value": "January 2019", "type": "date" },
+    { "value": "MN05", "type": "identifier" }
+  ]
+}

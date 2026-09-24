@@ -1,0 +1,27 @@
+{
+  "source": "medical-wcab-lemieux.pdf",
+  "pii": [
+    { "value": "Crystal Lemieux Benedict", "type": "person" },
+    { "value": "Laura Wertheimer Hatch", "type": "person" },
+    { "value": "Katherine A. Zalewski", "type": "person" },
+    { "value": "José H. Razo", "type": "person" },
+    { "value": "Craig Snellings", "type": "person" },
+    { "value": "Ben H. Nakatani Jr.", "type": "person" },
+    { "value": "K M Meat Company, Inc.", "type": "organization" },
+    { "value": "Starr Indemnity and Liability Company", "type": "organization" },
+    { "value": "Sedgwick", "type": "organization" },
+    { "value": "Leviton, Diaz & Ginocchio, Inc.", "type": "organization" },
+    { "value": "Dietz, Gilmor & Chazen, APC", "type": "organization" },
+    { "value": "Laughlin, Falbo, Levy & Moresi", "type": "organization" },
+    { "value": "Los Angeles, California", "type": "location" },
+    { "value": "Anaheim District Office", "type": "location" },
+    { "value": "November 15, 2019", "type": "date" },
+    { "value": "November 15, 2021", "type": "date" },
+    { "value": "February 7, 2022", "type": "date" },
+    { "value": "cervical spine injury", "type": "medical_condition" },
+    { "value": "lumbar spine injury", "type": "medical_condition" },
+    { "value": "bilateral knees injury", "type": "medical_condition" },
+    { "value": "$1,251.38", "type": "financial" },
+    { "value": "ADJ11734603", "type": "identifier" }
+  ]
+}
