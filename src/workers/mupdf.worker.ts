@@ -8,13 +8,50 @@ function getMupdf() {
   return mupdfPromise
 }
 
-type LoadMsg       = { id: number; type: 'load';       bytes: Uint8Array }
-type RenderMsg     = { id: number; type: 'render';     pageIndex: number; scale: number }
-type SearchPageMsg = { id: number; type: 'searchPage'; pageIndex: number; values: string[] }
-type RedactMsg     = { id: number; type: 'redact';     bytes: Uint8Array; entities: string[] }
-type WorkerInMsg   = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg
+type LoadMsg         = { id: number; type: 'load';        bytes: Uint8Array }
+type RenderMsg       = { id: number; type: 'render';      pageIndex: number; scale: number }
+type SearchPageMsg   = { id: number; type: 'searchPage';  pageIndex: number; values: string[] }
+type RedactMsg       = { id: number; type: 'redact';      bytes: Uint8Array; entities: string[] }
+type ExtractTextMsg  = { id: number; type: 'extractText'; bytes: Uint8Array }
+type WorkerInMsg     = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg | ExtractTextMsg
 
 let doc: MupdfDocument | null = null
+
+// Reconstruct page text by grouping mupdf line items that share the same
+// Y coordinate (i.e. the same visual row), then sorting rows top-to-bottom
+// and items within a row left-to-right. Matches the spatial logic pdfjs used.
+function spatialTextFromJson(jsonStr: string): string {
+  const { blocks } = JSON.parse(jsonStr) as {
+    blocks: Array<{
+      type: string
+      lines: Array<{ x: number; y: number; text: string }>
+    }>
+  }
+
+  type LineItem = { x: number; y: number; text: string }
+  const items: LineItem[] = []
+  for (const block of blocks) {
+    if (block.type !== 'text') continue
+    for (const line of block.lines) {
+      const clean = line.text.replace(/�+/g, '').trim()
+      if (clean) items.push({ x: line.x, y: line.y, text: clean })
+    }
+  }
+
+  const ROW_TOLERANCE = 4
+  const rows = new Map<number, LineItem[]>()
+  for (const item of items) {
+    const key = [...rows.keys()].find((k) => Math.abs(k - item.y) <= ROW_TOLERANCE) ?? item.y
+    const row = rows.get(key) ?? []
+    row.push(item)
+    rows.set(key, row)
+  }
+
+  return [...rows.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, row]) => row.sort((a, b) => a.x - b.x).map((t) => t.text).join(' '))
+    .join('\n')
+}
 
 self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
   const mupdf = await getMupdf()
@@ -114,6 +151,19 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
         { id: msg.id, type: 'redacted', bytes: output },
         { transfer: [output.buffer as ArrayBuffer] },
       )
+
+    } else if (msg.type === 'extractText') {
+      const extractDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf')
+      const pageCount = extractDoc.countPages()
+      const pageTexts: string[] = []
+      for (let i = 0; i < pageCount; i++) {
+        const page = extractDoc.loadPage(i)
+        const struct = page.toStructuredText('preserve-whitespace')
+        pageTexts.push(spatialTextFromJson(struct.asJSON(1)))
+        page.destroy()
+      }
+      extractDoc.destroy()
+      self.postMessage({ id: msg.id, type: 'textExtracted', pageTexts })
     }
   } catch (err) {
     self.postMessage({ id: msg.id, type: 'error', message: String(err) })

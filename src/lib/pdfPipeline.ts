@@ -1,4 +1,3 @@
-import * as pdfjsLib from "pdfjs-dist"
 import NERPipeline from "@/lib/nerPipeline"
 import type { TokenClassificationPipeline } from "@huggingface/transformers"
 import type { Redaction } from "@/types"
@@ -18,11 +17,6 @@ const REGEX_PATTERNS: Array<{ type: string; pattern: RegExp }> = [
 
 const CHUNK_WORDS = 200
 const OVERLAP_WORDS = 30
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).href
 
 function cleanTextForNer(text: string): string {
   return text
@@ -63,39 +57,25 @@ function extractRegexEntities(text: string): Array<{ type: string; value: string
   return results
 }
 
-export async function extractPdfTextPerPage(url: string): Promise<string[]> {
-  const pdf = await pdfjsLib.getDocument({ url }).promise
-  const pages: string[] = []
-
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i)
-    const content = await page.getTextContent()
-
-    type Item = { str: string; x: number; y: number }
-    const items: Item[] = content.items.flatMap((item) => {
-      if (!("str" in item) || !item.str.trim()) return []
-      const [,, , , x, y] = item.transform as number[]
-      return [{ str: item.str, x, y }]
+export async function extractPdfTextPerPage(bytes: Uint8Array): Promise<string[]> {
+  const worker = new Worker(
+    new URL('../workers/mupdf.worker.ts', import.meta.url),
+    { type: 'module' },
+  )
+  try {
+    return await new Promise<string[]>((resolve, reject) => {
+      const handler = (e: MessageEvent) => {
+        worker.removeEventListener('message', handler)
+        if (e.data.type === 'textExtracted') resolve(e.data.pageTexts as string[])
+        else reject(new Error(e.data.message ?? 'Text extraction failed'))
+      }
+      worker.addEventListener('message', handler)
+      worker.onerror = reject
+      worker.postMessage({ id: 0, type: 'extractText', bytes })
     })
-
-    const ROW_TOLERANCE = 4
-    const rows = new Map<number, Item[]>()
-    for (const item of items) {
-      const key = [...rows.keys()].find((k) => Math.abs(k - item.y) <= ROW_TOLERANCE) ?? item.y
-      const row = rows.get(key) ?? []
-      row.push(item)
-      rows.set(key, row)
-    }
-
-    pages.push(
-      [...rows.entries()]
-        .sort(([a], [b]) => b - a)
-        .map(([, row]) => row.sort((a, b) => a.x - b.x).map((t) => t.str).join(" "))
-        .join("\n")
-    )
+  } finally {
+    worker.terminate()
   }
-
-  return pages
 }
 
 export async function detectPii(pageTexts: string[]): Promise<Redaction[]> {

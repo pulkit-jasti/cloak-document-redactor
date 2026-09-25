@@ -27,7 +27,7 @@ export default function UploadPage() {
     setIsCloaking(true)
 
     try {
-      const pageTexts = await extractPdfTextPerPage(url)
+      const pageTexts = await extractPdfTextPerPage(bytes)
       const redactions = await detectPii(pageTexts)
       setEntities(redactions)
 
