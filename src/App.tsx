@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CloakProvider } from '@/context/CloakContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -13,9 +13,10 @@ import NERPipeline, {
 } from '@/lib/nerPipeline';
 import { useCloak } from '@/context/CloakContext';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isMobile = (navigator as any).userAgentData?.mobile
-	?? /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
+const isMobile = typeof navigator !== 'undefined' && (
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	((navigator as any).userAgentData?.mobile ?? /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent))
+);
 
 function RequirePdf({ children }: { children: React.ReactNode }) {
 	const { pdfUrl } = useCloak();
@@ -24,11 +25,12 @@ function RequirePdf({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-	const [modelStatus, setModelStatus] = useState<ModelStatus>(ModelStatus.Loading);
+	const [modelStatus, setModelStatus] = useState<ModelStatus>(ModelStatus.Idle);
 	const [lastEvent, setLastEvent] = useState<ProgressEvent | null>(null);
 
-	useEffect(() => {
-		if (isMobile) return;
+	function loadModel() {
+		if (modelStatus !== ModelStatus.Idle) return;
+		setModelStatus(ModelStatus.Loading);
 		NERPipeline.getInstance((event) => {
 			setLastEvent(event);
 			if (event.status === ModelStatus.Ready) setModelStatus(ModelStatus.Ready);
@@ -40,7 +42,7 @@ export default function App() {
 				console.error('[Cloak NER] failed to load model:', err);
 				setModelStatus(ModelStatus.Error);
 			});
-	}, []);
+	}
 
 	if (isMobile) return <MobileGate />;
 
@@ -48,7 +50,7 @@ export default function App() {
 		<ThemeProvider>
 			<BrowserRouter>
 				<CloakProvider>
-					<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} />
+					<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} onLoad={loadModel} />
 					<Routes>
 						<Route path='/' element={<UploadPage />} />
 						<Route path='/preview' element={<RequirePdf><PreviewPage /></RequirePdf>} />

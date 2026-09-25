@@ -1,4 +1,5 @@
 export enum ModelStatus {
+	Idle = 'idle',
 	Loading = 'loading',
 	Ready = 'ready',
 	Error = 'error',
@@ -15,18 +16,32 @@ const IS_DEV = import.meta.env.VITE_ENV === 'development';
 type Props = {
 	status: ModelStatus;
 	lastEvent: ProgressEvent | null;
+	onLoad: () => void;
 };
 
-export default function ModelLoadingIndicator({ status, lastEvent }: Props) {
+export default function ModelLoadingIndicator({ status, lastEvent, onLoad }: Props) {
 	if (!IS_DEV) return null;
 
+	if (status === ModelStatus.Idle) {
+		return (
+			<button
+				onClick={onLoad}
+				className='fixed bottom-3 right-3 z-50 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-sm font-mono hover:bg-accent cursor-pointer'
+			>
+				Load model
+			</button>
+		);
+	}
+
 	const label = {
+		[ModelStatus.Idle]: '',
 		[ModelStatus.Loading]: 'Model loading…',
 		[ModelStatus.Ready]: 'Model ready',
 		[ModelStatus.Error]: 'Model error',
 	}[status];
 
 	const dot = {
+		[ModelStatus.Idle]: '',
 		[ModelStatus.Loading]: 'bg-yellow-400 animate-pulse',
 		[ModelStatus.Ready]: 'bg-green-400',
 		[ModelStatus.Error]: 'bg-red-400',

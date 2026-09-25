@@ -1,0 +1,32 @@
+# Cloak
+
+> Cloak is a privacy-first PDF redaction tool that runs entirely in the browser. It uses on-device AI to detect and redact personally identifiable information (PII) from PDF documents. No file is ever uploaded to a server — all processing happens locally on the user's device.
+
+## What it does
+
+Cloak lets users drop a PDF, automatically detects PII using a named entity recognition (NER) model running in the browser via WebGPU or WASM, and produces a redacted PDF with black boxes over sensitive content. The redacted file can be downloaded immediately.
+
+PII types detected include: names, email addresses, phone numbers, physical addresses, organizations, and other named entities depending on the model in use.
+
+## How it works
+
+1. User drops or selects a PDF on the landing page
+2. The NER model (loaded via @huggingface/transformers, running on-device) extracts text from the PDF page by page using PDF.js
+3. Detected entities are shown to the user for review
+4. User confirms redactions; mupdf applies permanent black-box redaction annotations to the PDF
+5. The redacted PDF is available for download
+
+All processing is client-side. No network requests are made with document content.
+
+## Key facts
+
+- URL: https://cloakdoc.app
+- Free to use, no account required
+- Works offline once the page and model are loaded
+- Supports any text-based PDF (not scanned image PDFs)
+- Built with React, Vite, PDF.js, mupdf, and @huggingface/transformers
+- Model runs via WebGPU when available, falls back to WASM on CPU
+
+## Pages
+
+- [Home / Upload](https://cloakdoc.app/): Drop a PDF to begin redaction

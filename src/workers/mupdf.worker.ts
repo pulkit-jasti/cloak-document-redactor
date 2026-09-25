@@ -57,7 +57,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
       const results: Record<string, [number, number, number, number][]> = {}
       for (const value of msg.values) {
         if (!value.trim()) continue
-        const hits = page.search(value) as number[][][]
+        const hits = page.search(value, null) as number[][][]
         const rects: [number, number, number, number][] = []
         for (const quads of hits) {
           for (const quad of quads) {
@@ -84,7 +84,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
 
         for (const entity of msg.entities) {
           if (!entity.trim()) continue
-          const hits = (page as PDFPage).search(entity, 100)
+          const hits = (page as PDFPage).search(entity, null)
           for (const quads of hits) {
             for (const quad of quads) {
               // quad is a flat 8-float array: [ul.x, ul.y, ur.x, ur.y, ll.x, ll.y, lr.x, lr.y]
