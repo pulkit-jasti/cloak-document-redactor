@@ -7,17 +7,32 @@ function checkServer(url: string): Promise<boolean> {
 }
 
 export default async function globalSetup() {
-  const [appUp, modelServerUp] = await Promise.all([
+  const testModel = process.env.VITE_MODEL ?? 'bert'
+  const isOllama = testModel.startsWith('ollama:')
+
+  const checks: Promise<boolean>[] = [
     checkServer('http://localhost:5173'),
-    checkServer('http://localhost:8080'),
-  ])
+    isOllama ? Promise.resolve(true) : checkServer('http://localhost:8080'),
+  ]
+
+  if (isOllama) {
+    checks.push(checkServer('http://localhost:11434'))
+  }
+
+  const [appUp, modelServerUp, ollamaUp] = await Promise.all(checks)
 
   if (!appUp) {
     console.error('Dev server not running. Start it with: npm run dev')
     process.exit(1)
   }
-  if (!modelServerUp) {
+  if (!isOllama && !modelServerUp) {
     console.error('Model server not running. Start it with: npm run models')
+    process.exit(1)
+  }
+  if (isOllama && !ollamaUp) {
+    const model = testModel.slice('ollama:'.length)
+    console.error(`Ollama not running. Start it with: OLLAMA_ORIGINS=${process.env.npm_lifecycle_script ?? '<app-origin>'} ollama serve`)
+    console.error(`Make sure model "${model}" is pulled: ollama pull ${model}`)
     process.exit(1)
   }
 }

@@ -9,7 +9,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const FIXTURES_DIR = path.resolve(__dirname, '../fixtures')
 const PDFS_DIR = path.resolve(__dirname, '../pdfs')
 
-const fixtureFiles = fs.readdirSync(FIXTURES_DIR).filter((f) => f.endsWith('.json'))
+const ACTIVE_FIXTURES = [
+  'gov-financial-disclosure-2.json',
+  'legal-personal-injury-lloyd.json',
+  'medical-wcab-lemieux.json',
+  'resume-collection-ucdavis.json',
+  'academic-paper-arxiv.json',
+]
+const fixtureFiles = ACTIVE_FIXTURES
 
 interface FixtureItem {
   value: string

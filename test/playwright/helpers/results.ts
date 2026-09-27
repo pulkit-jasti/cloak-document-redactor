@@ -11,6 +11,7 @@ export interface PdfResult {
   missed: string[]
   catch_rate: number
   errors: string[]
+  duration_ms: number
 }
 
 export interface RunResult {
@@ -19,6 +20,7 @@ export interface RunResult {
     redacted: number
     missed: number
     catch_rate: number
+    duration_ms: number
   }
   model: { id: string }
   timestamp: string
@@ -41,6 +43,8 @@ export function writeResults(data: RunResult): void {
 }
 
 export function readModelId(): string {
+  const viteModel = process.env.VITE_MODEL
+  if (viteModel && !viteModel.startsWith('bert')) return viteModel
   try {
     const envPath = path.resolve(__dirname, '../../../.env.local')
     const content = fs.readFileSync(envPath, 'utf-8')

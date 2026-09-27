@@ -11,7 +11,7 @@ export default class PiiReporter implements Reporter {
     const attachment = result.attachments.find((a) => a.name === 'pii-result')
     if (!attachment?.body) return
 
-    const pdfResult: PdfResult = JSON.parse(attachment.body.toString())
+    const pdfResult: PdfResult = { ...JSON.parse(attachment.body.toString()), duration_ms: result.duration }
     this.results.push(pdfResult)
   }
 
@@ -24,8 +24,9 @@ export default class PiiReporter implements Reporter {
         redacted: acc.redacted + r.redacted.length,
         missed: acc.missed + r.missed.length,
         catch_rate: 0,
+        duration_ms: acc.duration_ms + r.duration_ms,
       }),
-      { fixture_items: 0, redacted: 0, missed: 0, catch_rate: 0 }
+      { fixture_items: 0, redacted: 0, missed: 0, catch_rate: 0, duration_ms: 0 }
     )
     totals.catch_rate = totals.fixture_items > 0 ? totals.redacted / totals.fixture_items : 0
 

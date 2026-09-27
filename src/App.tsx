@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CloakProvider } from '@/context/CloakContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { OllamaProvider } from '@/context/OllamaContext';
 import UploadPage from '@/pages/UploadPage';
 import PreviewPage from '@/pages/PreviewPage';
 import EditPage from '@/pages/EditPage';
@@ -48,6 +49,7 @@ export default function App() {
 
 	return (
 		<ThemeProvider>
+			<OllamaProvider>
 			<BrowserRouter>
 				<CloakProvider>
 					<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} onLoad={loadModel} />
@@ -58,6 +60,7 @@ export default function App() {
 					</Routes>
 				</CloakProvider>
 			</BrowserRouter>
+			</OllamaProvider>
 		</ThemeProvider>
 	);
 }

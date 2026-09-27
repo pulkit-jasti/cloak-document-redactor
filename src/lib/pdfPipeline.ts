@@ -46,7 +46,7 @@ async function runNer(text: string, pipe: TokenClassificationPipeline) {
   return results.flatMap((r) => Array.from(r as ArrayLike<(typeof r)[number]>))
 }
 
-function extractRegexEntities(text: string): Array<{ type: string; value: string }> {
+export function extractRegexEntities(text: string): Array<{ type: string; value: string }> {
   const results: Array<{ type: string; value: string }> = []
   for (const { type, pattern } of REGEX_PATTERNS) {
     for (const match of text.matchAll(new RegExp(pattern.source, "g"))) {
@@ -78,7 +78,23 @@ export async function extractPdfTextPerPage(bytes: Uint8Array): Promise<string[]
   }
 }
 
-export async function detectPii(pageTexts: string[]): Promise<Redaction[]> {
+export interface DetectPiiOptions {
+  mode?: 'bert' | 'ollama'
+  ollamaModel?: string
+}
+
+export async function detectPii(pageTexts: string[], options: DetectPiiOptions = {}): Promise<Redaction[]> {
+  const { mode = 'bert', ollamaModel } = options
+
+  if (mode === 'ollama' && ollamaModel) {
+    const { detectPiiWithOllama } = await import('@/lib/ollamaClient')
+    try {
+      return await detectPiiWithOllama(pageTexts, ollamaModel)
+    } catch (err) {
+      console.warn('[Cloak] Ollama failed, falling back to BERT:', err)
+    }
+  }
+
   const pipe = await NERPipeline.getInstance()
   const seen = new Set<string>()
   const redactions: Redaction[] = []
