@@ -3,7 +3,7 @@ import { useOllama } from '@/context/OllamaContext'
 import Modal from '@/components/Modal'
 
 const isWindows = typeof navigator !== 'undefined' && navigator.userAgent.includes('Win')
-const origin = window.location.origin
+const origin = typeof window !== 'undefined' ? window.location.origin : ''
 const COMMAND = isWindows
   ? `$env:OLLAMA_ORIGINS="${origin}"; ollama serve`
   : `OLLAMA_ORIGINS=${origin} ollama serve`

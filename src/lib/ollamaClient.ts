@@ -6,6 +6,7 @@ const PROBE_TIMEOUT_MS = 2000
 
 export type OllamaModel = {
   name: string
+  size: number // bytes
   parameterSize: string
   quantization: string
   family: string
@@ -44,7 +45,7 @@ export async function probeOllama(): Promise<OllamaProbeResult> {
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
     })
     const json = await res.json()
-    const rawModels: { name: string; details?: { parameter_size?: string; quantization_level?: string; family?: string } }[] = json.models ?? []
+    const rawModels: { name: string; size?: number; details?: { parameter_size?: string; quantization_level?: string; family?: string } }[] = json.models ?? []
 
     // Fetch capabilities for all models in parallel, filter to chat-capable only
     const withCapabilities = await Promise.all(
@@ -61,6 +62,7 @@ export async function probeOllama(): Promise<OllamaProbeResult> {
       .filter(({ isChat }) => isChat)
       .map(({ m }) => ({
         name: m.name,
+        size: m.size ?? 0,
         parameterSize: m.details?.parameter_size ?? '',
         quantization: m.details?.quantization_level ?? '',
         family: m.details?.family ?? '',

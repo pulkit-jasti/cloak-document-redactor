@@ -7,6 +7,8 @@ import { useCloak } from "@/context/CloakContext"
 import { useOllama } from "@/context/OllamaContext"
 import { extractPdfTextPerPage, detectPii } from "@/lib/pdfPipeline"
 import { redactPdf } from "@/lib/redactPdf"
+import { countPdfPages } from "@/lib/countPdfPages"
+import { estimateSeconds } from "@/lib/estimateTime"
 import { ModelSelectorTrigger, ModelSelectorModal } from "@/components/ModelSelectorModal"
 import { ConnectOllamaModal } from "@/components/ConnectOllamaModal"
 import DropZone from "./components/DropZone"
@@ -15,9 +17,10 @@ import FilePreview from "./components/FilePreview"
 export default function UploadPage() {
   const navigate = useNavigate()
   const { setPdf, setEntities, setRedactedBytes } = useCloak()
-  const { selectedModel } = useOllama()
+  const { selectedModel, models } = useOllama()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isCloaking, setIsCloaking] = useState(false)
+  const [estimatedSeconds, setEstimatedSeconds] = useState(0)
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false)
   const [connectOllamaOpen, setConnectOllamaOpen] = useState(false)
 
@@ -30,6 +33,14 @@ export default function UploadPage() {
     const url = URL.createObjectURL(selectedFile)
     const bytes = new Uint8Array(await selectedFile.arrayBuffer())
     setPdf(url, bytes)
+
+    const pageCount = await countPdfPages(bytes)
+    const mode = selectedModel ? 'ollama' : 'bert'
+    const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator
+    const ollamaModel = models.find((m) => m.name === selectedModel)
+    const sizeGB = ollamaModel ? ollamaModel.size / 1e9 : 4
+    setEstimatedSeconds(estimateSeconds(pageCount, mode, hasWebGPU, sizeGB))
+
     setIsCloaking(true)
 
     try {
@@ -52,7 +63,7 @@ export default function UploadPage() {
 
   return (
     <>
-      {isCloaking && <CloakingOverlay />}
+      {isCloaking && <CloakingOverlay estimatedSeconds={estimatedSeconds} />}
 
       <div className="h-screen flex flex-col">
         <Navbar />
