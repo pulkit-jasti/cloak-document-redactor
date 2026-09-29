@@ -28,6 +28,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		document.documentElement.classList.toggle('dark', theme === Theme.Dark);
 		localStorage.setItem('theme', theme);
+		// Keep browser UI color in sync when the user overrides the OS theme
+		document
+			.querySelectorAll('meta[name="theme-color"]')
+			.forEach((meta) => meta.setAttribute('content', theme === Theme.Dark ? '#0a0a0a' : '#ffffff'));
 	}, [theme]);
 
 	const toggleTheme = () => setTheme((t) => (t === Theme.Dark ? Theme.Light : Theme.Dark));

@@ -4,9 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cloak - Redact PII from PDFs, privately</title>
-    <meta name="description" content="Redact names, emails, phone numbers and more from PDFs entirely in your browser. No uploads, no server. Your documents never leave your device." />
+    <meta name="description" content="Redact names, emails, phone numbers and other personal info from PDFs right in your browser. Free, no uploads, no sign-up. Your files never leave your device." />
     <link rel="canonical" href="https://cloakdoc.app/" />
-    <meta name="theme-color" content="#09090b" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -15,34 +16,65 @@
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Cloak" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:url" content="https://cloakdoc.app/" />
     <meta property="og:title" content="Cloak - Redact PII from PDFs, privately" />
-    <meta property="og:description" content="Redact names, emails, phone numbers and more from PDFs entirely in your browser. No uploads, no server. Your documents never leave your device." />
+    <meta property="og:description" content="Redact names, emails, phone numbers and other personal info from PDFs right in your browser. Free, no uploads, no sign-up. Your files never leave your device." />
     <meta property="og:image" content="https://cloakdoc.app/og-img.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content="Cloak logo with the tagline: Auto-redact personal info from PDFs. 100% on-device, open source, works offline." />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Cloak - Redact PII from PDFs, privately" />
-    <meta name="twitter:description" content="Redact names, emails, phone numbers and more from PDFs entirely in your browser. No uploads, no server. Your documents never leave your device." />
+    <meta name="twitter:description" content="Redact names, emails, phone numbers and other personal info from PDFs right in your browser. Free, no uploads, no sign-up. Your files never leave your device." />
     <meta name="twitter:image" content="https://cloakdoc.app/og-img.png" />
+    <meta name="twitter:image:alt" content="Cloak logo with the tagline: Auto-redact personal info from PDFs. 100% on-device, open source, works offline." />
 
     <!-- Structured data -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Cloak",
-        "url": "https://cloakdoc.app",
-        "description": "Redact PII from PDFs entirely in your browser. No uploads, no server. Your documents never leave your device.",
-        "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "Web Browser",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://cloakdoc.app/#website",
+            "name": "Cloak",
+            "alternateName": ["Cloak PDF Redactor", "cloakdoc"],
+            "url": "https://cloakdoc.app/",
+            "inLanguage": "en"
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://cloakdoc.app/#app",
+            "name": "Cloak",
+            "url": "https://cloakdoc.app/",
+            "isPartOf": { "@id": "https://cloakdoc.app/#website" },
+            "description": "Redact names, emails, phone numbers and other personal info from PDFs right in your browser. Free, no uploads, no sign-up. Your files never leave your device.",
+            "image": "https://cloakdoc.app/og-img.png",
+            "applicationCategory": "UtilitiesApplication",
+            "operatingSystem": "Windows, macOS, Linux, ChromeOS",
+            "browserRequirements": "Requires a desktop browser with WebAssembly support. WebGPU recommended for faster processing.",
+            "featureList": [
+              "Detects names, organizations and locations with an on-device AI model",
+              "Detects email addresses, phone numbers and SSNs",
+              "Review and approve each redaction before download",
+              "Permanent black-bar redaction of PDF text",
+              "Optional detection with a local LLM via Ollama",
+              "100% client-side: documents are never uploaded"
+            ],
+            "isAccessibleForFree": true,
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "sameAs": ["https://github.com/pulkit-jasti/cloak-document-redactor"]
+          }
+        ]
       }
     </script>
   </head>
