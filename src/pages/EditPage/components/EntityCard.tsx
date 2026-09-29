@@ -16,11 +16,11 @@ export default function EntityCard({ redaction: r, onToggle }: Props) {
         onClick={() => onToggle(r.id)}
         className={`shrink-0 text-xs px-2 py-1 rounded-md border font-medium transition-colors ${
           r.approved
-            ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-            : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+            ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/50'
+            : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/50'
         }`}
       >
-        {r.approved ? 'Approved' : 'Dismissed'}
+        {r.approved ? 'Redact' : 'Dismiss'}
       </button>
     </div>
   )

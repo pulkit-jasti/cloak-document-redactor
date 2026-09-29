@@ -84,7 +84,7 @@ function PdfPage({
     for (const h of highlights) {
       const entityRects = rects[h.value]
       if (!entityRects) continue
-      ctx.strokeStyle = h.approved ? 'rgba(0, 0, 0, 0.85)' : 'rgba(220, 38, 38, 0.85)'
+      ctx.strokeStyle = h.approved ? 'rgba(22, 163, 74, 0.85)' : 'rgba(220, 38, 38, 0.85)'
       for (const [x0, y0, x1, y1] of entityRects) {
         ctx.strokeRect(x0 * scale, y0 * scale, (x1 - x0) * scale, (y1 - y0) * scale)
       }
