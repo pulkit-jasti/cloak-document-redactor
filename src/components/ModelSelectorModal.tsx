@@ -1,3 +1,5 @@
+import { Bot, ChevronDown, Cpu } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useOllama } from '@/context/OllamaContext'
 import { warmUpModel, type OllamaModel } from '@/lib/ollamaClient'
 import Modal from '@/components/Modal'
@@ -91,23 +93,20 @@ export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
 }
 
 export function ModelSelectorTrigger({ onClick }: { onClick: () => void }) {
-  const { selectedModel, status } = useOllama()
-
-  const label = selectedModel ? selectedModel : 'BERT (built-in)'
-  const showDot = status === 'available' && !selectedModel
+  const { selectedModel } = useOllama()
+  const Icon = selectedModel ? Bot : Cpu
 
   return (
-    <button
+    <Button
+      variant="outline"
       onClick={onClick}
-      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      aria-haspopup="dialog"
+      className="h-9 gap-2 rounded-full px-4 font-normal"
     >
-      {showDot && (
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" aria-label="Ollama available" />
-      )}
-      <span>Model: {label}</span>
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </button>
+      <Icon className="size-4 text-muted-foreground" aria-hidden />
+      <span className="text-muted-foreground">Model:</span>
+      <span className="max-w-40 truncate font-medium">{selectedModel ?? 'BERT (built-in)'}</span>
+      <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden />
+    </Button>
   )
 }

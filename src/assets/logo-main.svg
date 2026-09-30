@@ -1,19 +1,19 @@
 <svg width="1123" height="213" viewBox="0 0 1123 213" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M0 0H22V213H0V0Z" fill="black"/>
-<path d="M62 191V213H0V191H62Z" fill="black"/>
-<path d="M62 0V22L0 22V0L62 0Z" fill="black"/>
-<path d="M232 37H127V65H232V37Z" fill="black"/>
-<path d="M232 148H127V176H232V148Z" fill="#696969"/>
-<path d="M127 37L127 176H155V37H127Z" fill="black"/>
-<path d="M402 148H297V176H402V148Z" fill="#696969"/>
-<path d="M297 37V176H325V37H297Z" fill="black"/>
-<path d="M606 37H467V176H606V37Z" fill="black"/>
-<path d="M777 119H704V147H777V119Z" fill="#696969"/>
-<path d="M810 176H779.136L740.5 79.3901L701.864 176H671L726.873 37.012L739.294 37.004L746.263 37L754.127 37.012L810 176Z" fill="black"/>
-<path d="M956.491 174.417L879.997 107.583L898.722 86.775L996 174.417L956.491 174.417Z" fill="#696969"/>
-<path d="M875 35.7754V174.775H902.983V35.7754H875Z" fill="black"/>
-<path d="M956.491 38.5832L879.997 105.417L898.722 126.225L996 38.5832L956.491 38.5832Z" fill="black"/>
-<path d="M1123 0H1101V213H1123V0Z" fill="black"/>
-<path d="M1061 191V213H1123V191H1061Z" fill="black"/>
-<path d="M1061 0V22L1123 22V0L1061 0Z" fill="black"/>
+<path d="M0 0H22V213H0V0Z" fill="currentColor"/>
+<path d="M62 191V213H0V191H62Z" fill="currentColor"/>
+<path d="M62 0V22L0 22V0L62 0Z" fill="currentColor"/>
+<path d="M232 37H127V65H232V37Z" fill="currentColor"/>
+<path d="M232 148H127V176H232V148Z" fill="currentColor" fill-opacity="0.59"/>
+<path d="M127 37L127 176H155V37H127Z" fill="currentColor"/>
+<path d="M402 148H297V176H402V148Z" fill="currentColor" fill-opacity="0.59"/>
+<path d="M297 37V176H325V37H297Z" fill="currentColor"/>
+<path d="M606 37H467V176H606V37Z" fill="currentColor"/>
+<path d="M777 119H704V147H777V119Z" fill="currentColor" fill-opacity="0.59"/>
+<path d="M810 176H779.136L740.5 79.3901L701.864 176H671L726.873 37.012L739.294 37.004L746.263 37L754.127 37.012L810 176Z" fill="currentColor"/>
+<path d="M956.491 174.417L879.997 107.583L898.722 86.775L996 174.417L956.491 174.417Z" fill="currentColor" fill-opacity="0.59"/>
+<path d="M875 35.7754V174.775H902.983V35.7754H875Z" fill="currentColor"/>
+<path d="M956.491 38.5832L879.997 105.417L898.722 126.225L996 38.5832L956.491 38.5832Z" fill="currentColor"/>
+<path d="M1123 0H1101V213H1123V0Z" fill="currentColor"/>
+<path d="M1061 191V213H1123V191H1061Z" fill="currentColor"/>
+<path d="M1061 0V22L1123 22V0L1061 0Z" fill="currentColor"/>
 </svg>

@@ -131,3 +131,54 @@
     cursor: pointer;
     }
 }
+/* Faint grid behind the landing hero, fading out from the top center */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 60% 70% at 50% 0%, #000 30%, transparent 100%);
+}
+
+/* Landing page redaction demo: a bar sweeps over each .redact token in turn */
+@layer components {
+  .redact {
+    position: relative;
+    white-space: nowrap;
+  }
+  .redact::after {
+    content: '';
+    position: absolute;
+    inset: 0.1em -0.15em;
+    border-radius: 2px;
+    background: var(--foreground);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 450ms cubic-bezier(0.65, 0, 0.35, 1) var(--redact-delay, 0ms);
+  }
+  [data-redacted='true'] .redact::after {
+    transform: scaleX(1);
+  }
+  [data-redacted='false'] .redact::after {
+    transition-duration: 250ms;
+    transition-delay: 0ms;
+  }
+
+  .scan-line {
+    height: 1px;
+    background: color-mix(in oklch, var(--foreground) 35%, transparent);
+    box-shadow: 0 0 14px 1px color-mix(in oklch, var(--foreground) 30%, transparent);
+    animation: scan var(--scan-duration, 1.6s) ease-in-out forwards;
+  }
+  @keyframes scan {
+    0% { top: 0; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .redact::after { transition: none; }
+    .scan-line { display: none; }
+  }
+}

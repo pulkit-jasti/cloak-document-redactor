@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cloak - Redact PII from PDFs, privately</title>
+    <title>Redact PDFs Privately in Your Browser | Cloak</title>
     <meta name="description" content="Redact names, emails, phone numbers and other personal info from PDFs right in your browser. Free, no uploads, no sign-up. Your files never leave your device." />
     <link rel="canonical" href="https://cloakdoc.app/" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
@@ -19,7 +19,7 @@
     <meta property="og:site_name" content="Cloak" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:url" content="https://cloakdoc.app/" />
-    <meta property="og:title" content="Cloak - Redact PII from PDFs, privately" />
+    <meta property="og:title" content="Redact PDFs Privately in Your Browser | Cloak" />
     <meta property="og:description" content="Redact names, emails, phone numbers and other personal info from PDFs right in your browser. Free, no uploads, no sign-up. Your files never leave your device." />
     <meta property="og:image" content="https://cloakdoc.app/og-img.png" />
     <meta property="og:image:width" content="1200" />
@@ -29,7 +29,7 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Cloak - Redact PII from PDFs, privately" />
+    <meta name="twitter:title" content="Redact PDFs Privately in Your Browser | Cloak" />
     <meta name="twitter:description" content="Redact names, emails, phone numbers and other personal info from PDFs right in your browser. Free, no uploads, no sign-up. Your files never leave your device." />
     <meta name="twitter:image" content="https://cloakdoc.app/og-img.png" />
     <meta name="twitter:image:alt" content="Cloak logo with the tagline: Auto-redact personal info from PDFs. 100% on-device, open source, works offline." />
@@ -72,16 +72,19 @@
               "price": "0",
               "priceCurrency": "USD"
             },
-            "sameAs": ["https://github.com/pulkit-jasti/cloak-document-redactor"]
+            "sameAs": ["https://github.com/pulkit-jasti/cloak-document-redactor"],
+            "creator": {
+              "@type": "Person",
+              "name": "Pulkit Jasti",
+              "url": "https://github.com/pulkit-jasti"
+            }
           }
         ]
       }
     </script>
   </head>
   <body>
-    <main>
-      <div id="root"></div>
-    </main>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
