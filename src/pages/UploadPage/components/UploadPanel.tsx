@@ -10,19 +10,22 @@ import { extractPdfTextPerPage, detectPii } from "@/lib/pdfPipeline"
 import { redactPdf } from "@/lib/redactPdf"
 import { countPdfPages } from "@/lib/countPdfPages"
 import { estimateSeconds } from "@/lib/estimateTime"
+import { hasAnyText } from "@/lib/pageStats"
 import DropZone from "./DropZone"
 import FilePreview from "./FilePreview"
+import NoTextModal from "./NoTextModal"
 import OllamaIcon from "@/assets/ollama.svg?react"
 
 export default function UploadPanel() {
   const navigate = useNavigate()
-  const { setPdf, setEntities, setRedactedBytes } = useCloak()
+  const { setPdf, setEntities, setRedactedBytes, reset } = useCloak()
   const { status, selectedModel, models } = useOllama()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isCloaking, setIsCloaking] = useState(false)
   const [estimatedSeconds, setEstimatedSeconds] = useState(0)
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false)
   const [connectOllamaOpen, setConnectOllamaOpen] = useState(false)
+  const [noTextOpen, setNoTextOpen] = useState(false)
 
   const ollamaConnected = status === "available"
 
@@ -46,7 +49,14 @@ export default function UploadPanel() {
     setIsCloaking(true)
 
     try {
-      const pageTexts = await extractPdfTextPerPage(bytes)
+      const { pageTexts, pageStats } = await extractPdfTextPerPage(bytes)
+      if (!hasAnyText(pageStats)) {
+        reset()
+        setIsCloaking(false)
+        setNoTextOpen(true)
+        return
+      }
+
       const redactions = await detectPii(pageTexts, {
         mode: selectedModel ? 'ollama' : 'bert',
         ollamaModel: selectedModel ?? undefined,
@@ -98,6 +108,10 @@ export default function UploadPanel() {
         </div>
       </div>
 
+      <NoTextModal
+        open={noTextOpen}
+        onClose={() => { setNoTextOpen(false); setSelectedFile(null) }}
+      />
       <ModelSelectorModal open={modelSelectorOpen} onClose={() => setModelSelectorOpen(false)} />
       <ConnectOllamaModal
         open={connectOllamaOpen}

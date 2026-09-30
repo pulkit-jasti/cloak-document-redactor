@@ -1,4 +1,5 @@
 import type { Document as MupdfDocument, PDFDocument, PDFPage } from 'mupdf'
+import type { PageStats } from '@/types'
 
 // Use dynamic import to avoid top-level await blocking onmessage registration.
 // Chrome drops messages sent to module workers before top-level awaits resolve.
@@ -18,6 +19,41 @@ type WorkerInMsg     = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg | Extract
 
 let doc: MupdfDocument | null = null
 
+const MIN_TEXT_CHARS = 20
+
+type StextBlock = {
+  type: string
+  bbox?: { x: number; y: number; w: number; h: number }
+  lines?: Array<{ x: number; y: number; text: string }>
+}
+
+function readPage(page: ReturnType<MupdfDocument['loadPage']>): { text: string; stats: PageStats } {
+  const [px0, py0, px1, py1] = page.getBounds()
+  const pageArea = Math.max((px1 - px0) * (py1 - py0), 1)
+  const json = page.toStructuredText('preserve-whitespace,preserve-images').asJSON(1)
+  const { blocks } = JSON.parse(json) as { blocks: StextBlock[] }
+
+  let imageArea = 0
+  for (const block of blocks) {
+    if (block.type !== 'image' || !block.bbox) continue
+    const { x, y, w, h } = block.bbox
+    const cw = Math.max(0, Math.min(x + w, px1) - Math.max(x, px0))
+    const ch = Math.max(0, Math.min(y + h, py1) - Math.max(y, py0))
+    imageArea += cw * ch
+  }
+
+  const text = spatialTextFromJson(json)
+  const charCount = text.match(/[\p{L}\p{N}]/gu)?.length ?? 0
+  return {
+    text,
+    stats: {
+      charCount,
+      imageCoverage: Math.min(imageArea / pageArea, 1),
+      hasText: charCount >= MIN_TEXT_CHARS,
+    },
+  }
+}
+
 // Reconstruct page text by grouping mupdf line items that share the same
 // Y coordinate (i.e. the same visual row), then sorting rows top-to-bottom
 // and items within a row left-to-right. Matches the spatial logic pdfjs used.
@@ -25,14 +61,14 @@ function spatialTextFromJson(jsonStr: string): string {
   const { blocks } = JSON.parse(jsonStr) as {
     blocks: Array<{
       type: string
-      lines: Array<{ x: number; y: number; text: string }>
+      lines?: Array<{ x: number; y: number; text: string }>
     }>
   }
 
   type LineItem = { x: number; y: number; text: string }
   const items: LineItem[] = []
   for (const block of blocks) {
-    if (block.type !== 'text') continue
+    if (block.type !== 'text' || !block.lines) continue
     for (const line of block.lines) {
       const clean = line.text.replace(/�+/g, '').trim()
       if (clean) items.push({ x: line.x, y: line.y, text: clean })
@@ -63,13 +99,15 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
       doc = mupdf.Document.openDocument(msg.bytes, 'application/pdf')
       const pageCount = doc.countPages()
       const pageSizes: Array<[number, number]> = []
+      const pageStats: PageStats[] = []
       for (let i = 0; i < pageCount; i++) {
         const page = doc.loadPage(i)
         const [x0, y0, x1, y1] = page.getBounds()
         pageSizes.push([x1 - x0, y1 - y0])
+        pageStats.push(readPage(page).stats)
         page.destroy()
       }
-      self.postMessage({ id: msg.id, type: 'loaded', pageCount, pageSizes })
+      self.postMessage({ id: msg.id, type: 'loaded', pageCount, pageSizes, pageStats })
 
     } else if (msg.type === 'render') {
       if (!doc) throw new Error('No document loaded')
@@ -138,7 +176,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
         }
 
         if (hasAnnotation) {
-          (page as PDFPage).applyRedactions()
+          (page as PDFPage).applyRedactions(true, mupdf.PDFPage.REDACT_IMAGE_PIXELS)
         }
         page.destroy()
       }
@@ -163,14 +201,16 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
       const extractDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf')
       const pageCount = extractDoc.countPages()
       const pageTexts: string[] = []
+      const pageStats: PageStats[] = []
       for (let i = 0; i < pageCount; i++) {
         const page = extractDoc.loadPage(i)
-        const struct = page.toStructuredText('preserve-whitespace')
-        pageTexts.push(spatialTextFromJson(struct.asJSON(1)))
+        const { text, stats } = readPage(page)
+        pageTexts.push(text)
+        pageStats.push(stats)
         page.destroy()
       }
       extractDoc.destroy()
-      self.postMessage({ id: msg.id, type: 'textExtracted', pageTexts })
+      self.postMessage({ id: msg.id, type: 'textExtracted', pageTexts, pageStats })
     }
   } catch (err) {
     self.postMessage({ id: msg.id, type: 'error', message: String(err) })

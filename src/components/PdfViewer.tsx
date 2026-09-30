@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { TriangleAlert } from 'lucide-react'
+import type { PageStats } from '@/types'
+import { formatPageList, imageOnlyPages } from '@/lib/pageStats'
 
 type PageSize = { width: number; height: number }
 
@@ -17,6 +20,7 @@ function PdfPage({
   onRatioChange,
   rects,
   highlights,
+  imageOnly,
 }: {
   pageIndex: number
   size: PageSize
@@ -26,6 +30,7 @@ function PdfPage({
   onRatioChange: (pageIndex: number, ratio: number) => void
   rects: Record<string, [number, number, number, number][]>
   highlights: PdfHighlight[]
+  imageOnly: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -114,6 +119,12 @@ function PdfPage({
           draggable={false}
         />
       )}
+      {imageOnly && (
+        <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-2.5 py-1 text-xs font-medium text-black shadow">
+          <TriangleAlert className="size-3.5" aria-hidden />
+          Image only, not scanned
+        </span>
+      )}
       <canvas
         ref={canvasRef}
         style={{
@@ -151,6 +162,7 @@ export default function PdfViewer({
   const [pageSrcs, setPageSrcs] = useState<(string | null)[]>([])
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [imageOnly, setImageOnly] = useState<number[]>([])
   // pageIndex -> { value -> rects[] }
   const [pageRects, setPageRects] = useState<Map<number, Record<string, [number, number, number, number][]>>>(
     new Map(),
@@ -199,6 +211,7 @@ export default function PdfViewer({
           height: h,
         }))
         setPageSizes(sizes)
+        setImageOnly(imageOnlyPages(msg.pageStats as PageStats[]))
         setPageSrcs(new Array(msg.pageCount as number).fill(null))
         ratiosRef.current = new Array(msg.pageCount as number).fill(0)
         setCurrentPage(1)
@@ -246,6 +259,7 @@ export default function PdfViewer({
   useEffect(() => {
     if (!pdfBytes || !workerRef.current) return
     setPageSizes([])
+    setImageOnly([])
     setPageSrcs([])
     setError(null)
     setPageRects(new Map())
@@ -297,6 +311,21 @@ export default function PdfViewer({
           </span>
         </div>
       )}
+      {imageOnly.length > 0 && (
+        <div
+          role="alert"
+          className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+          <p>
+            <span className="font-medium">
+              {formatPageList(imageOnly)} {imageOnly.length === 1 ? 'is an image' : 'are images'}, so Cloak couldn't scan{' '}
+              {imageOnly.length === 1 ? 'it' : 'them'} for personal info.
+            </span>{' '}
+            <span className="text-muted-foreground">Check {imageOnly.length === 1 ? 'it' : 'them'} yourself before sharing.</span>
+          </p>
+        </div>
+      )}
       <div ref={containerRef} className="w-full flex flex-col gap-20">
         {pageSizes.length > 0 && containerWidth > 0 ? (
           pageSizes.map((size, i) => (
@@ -310,6 +339,7 @@ export default function PdfViewer({
               onRatioChange={handleRatioChange}
               rects={pageRects.get(i) ?? {}}
               highlights={highlights?.filter((h) => h.page === i + 1) ?? []}
+              imageOnly={imageOnly.includes(i + 1)}
             />
           ))
         ) : (

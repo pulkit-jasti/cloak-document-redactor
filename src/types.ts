@@ -5,3 +5,9 @@ export type Redaction = {
   page: number
   approved: boolean
 }
+
+export type PageStats = {
+  charCount: number
+  imageCoverage: number
+  hasText: boolean
+}

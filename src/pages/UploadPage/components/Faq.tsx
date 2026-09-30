@@ -31,9 +31,8 @@ export default function Faq() {
                 rel="noopener noreferrer"
                 className="text-foreground underline underline-offset-4 hover:opacity-70"
               >
-                Open an issue on GitHub
+                Open an issue on GitHub.
               </a>
-              .
             </>
           }
         />

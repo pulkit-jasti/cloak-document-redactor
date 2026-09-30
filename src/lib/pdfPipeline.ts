@@ -1,6 +1,6 @@
 import NERPipeline from "@/lib/nerPipeline"
 import type { TokenClassificationPipeline } from "@huggingface/transformers"
-import type { Redaction } from "@/types"
+import type { PageStats, Redaction } from "@/types"
 
 export const ENTITY_LABELS: Record<string, string> = {
   PER: "Person",
@@ -57,16 +57,18 @@ export function extractRegexEntities(text: string): Array<{ type: string; value:
   return results
 }
 
-export async function extractPdfTextPerPage(bytes: Uint8Array): Promise<string[]> {
+export type ExtractedPdf = { pageTexts: string[]; pageStats: PageStats[] }
+
+export async function extractPdfTextPerPage(bytes: Uint8Array): Promise<ExtractedPdf> {
   const worker = new Worker(
     new URL('../workers/mupdf.worker.ts', import.meta.url),
     { type: 'module' },
   )
   try {
-    return await new Promise<string[]>((resolve, reject) => {
+    return await new Promise<ExtractedPdf>((resolve, reject) => {
       const handler = (e: MessageEvent) => {
         worker.removeEventListener('message', handler)
-        if (e.data.type === 'textExtracted') resolve(e.data.pageTexts as string[])
+        if (e.data.type === 'textExtracted') resolve({ pageTexts: e.data.pageTexts, pageStats: e.data.pageStats })
         else reject(new Error(e.data.message ?? 'Text extraction failed'))
       }
       worker.addEventListener('message', handler)
