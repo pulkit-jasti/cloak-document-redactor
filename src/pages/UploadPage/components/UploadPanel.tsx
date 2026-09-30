@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Plug } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CloakingOverlay from "@/components/CloakingOverlay"
 import { ModelSelectorTrigger, ModelSelectorModal } from "@/components/ModelSelectorModal"
@@ -13,6 +12,7 @@ import { countPdfPages } from "@/lib/countPdfPages"
 import { estimateSeconds } from "@/lib/estimateTime"
 import DropZone from "./DropZone"
 import FilePreview from "./FilePreview"
+import OllamaIcon from "@/assets/ollama.svg?react"
 
 export default function UploadPanel() {
   const navigate = useNavigate()
@@ -87,11 +87,12 @@ export default function UploadPanel() {
             aria-haspopup="dialog"
             className="h-9 gap-2 rounded-full px-4 font-normal"
           >
-            {ollamaConnected ? (
-              <span className="size-2 rounded-full bg-emerald-500" aria-hidden />
-            ) : (
-              <Plug className="size-4 text-muted-foreground" aria-hidden />
-            )}
+            <span className="relative" aria-hidden>
+              <OllamaIcon className="size-4" />
+              {ollamaConnected && (
+                <span className="absolute -right-0.5 -bottom-0.5 size-2 rounded-full bg-emerald-500 ring-2 ring-background" />
+              )}
+            </span>
             {ollamaConnected ? "Ollama connected" : "Connect Ollama"}
           </Button>
         </div>

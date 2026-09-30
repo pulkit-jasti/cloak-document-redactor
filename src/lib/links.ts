@@ -1,5 +1,8 @@
+const REPO = 'https://github.com/pulkit-jasti/cloak-document-redactor'
+
 export const LINKS = {
-  repo: 'https://github.com/pulkit-jasti/cloak-document-redactor',
+  repo: REPO,
+  license: `${REPO}/blob/master/LICENSE`,
   author: {
     name: 'Pulkit Jasti',
     github: 'https://github.com/pulkit-jasti',

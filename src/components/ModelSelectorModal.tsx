@@ -83,7 +83,7 @@ export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
             ))
           ) : (
             <p className="px-3 py-2 text-xs text-muted-foreground">
-              Not connected — use the Connect Ollama button to get started.
+              Not connected. Use the Connect Ollama button to get started.
             </p>
           )}
         </div>

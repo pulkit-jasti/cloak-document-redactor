@@ -19,7 +19,7 @@ type ProgressCallback = (event: ProgressEvent) => void;
 
 async function logDevInfo() {
 	const adapter = await navigator.gpu?.requestAdapter().catch(() => null);
-	console.log(`[Cloak] model ready — ${adapter ? 'webgpu' : 'wasm (cpu fallback)'}`);
+	console.log(`[Cloak] model ready: ${adapter ? 'webgpu' : 'wasm (cpu fallback)'}`);
 	if (adapter?.info) console.log('[Cloak] GPU info', adapter.info);
 }
 

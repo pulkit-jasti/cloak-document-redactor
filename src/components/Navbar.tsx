@@ -1,11 +1,11 @@
 import { Moon, Sun } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { GithubIcon } from '@/components/BrandIcons';
 import { useCloak } from '@/context/CloakContext';
 import { Theme, useTheme } from '@/context/ThemeContext';
 import { LINKS } from '@/lib/links';
 import Logo from '@/assets/logo-main.svg?react';
+import GithubIcon from '@/assets/github.svg?react';
 
 type Props = {
 	children?: React.ReactNode;
@@ -38,7 +38,7 @@ export default function Navbar({ children, overHero = false }: Props) {
 			<div className='flex-1' />
 			<Button variant='ghost' size='icon' asChild>
 				<a href={LINKS.repo} target='_blank' rel='noopener noreferrer' aria-label='Cloak on GitHub'>
-					<GithubIcon className='size-4' />
+					<GithubIcon className='size-4' aria-hidden />
 				</a>
 			</Button>
 			<Button variant='ghost' size='icon' onClick={toggleTheme} aria-label='Toggle theme'>

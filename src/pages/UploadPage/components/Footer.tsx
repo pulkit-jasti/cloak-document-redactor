@@ -1,6 +1,6 @@
-import { GithubIcon } from "@/components/BrandIcons"
 import { LINKS } from "@/lib/links"
 import Logo from "@/assets/logo-main.svg?react"
+import GithubIcon from "@/assets/github.svg?react"
 
 export default function Footer() {
   return (
@@ -30,10 +30,18 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 transition-colors hover:text-foreground"
             >
-              <GithubIcon className="size-4" />
+              <GithubIcon className="size-4" aria-hidden />
               Source code
             </a>
-            <span>© {new Date().getFullYear()} Cloak</span>
+            <a
+              href={LINKS.license}
+              target="_blank"
+              rel="noopener noreferrer license"
+              className="transition-colors hover:text-foreground"
+            >
+              AGPL-3.0 License
+            </a>
+            <span>© {new Date().getFullYear()} {LINKS.author.name}</span>
           </div>
         </div>
       </div>

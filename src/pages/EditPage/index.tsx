@@ -50,7 +50,7 @@ export default function EditPage() {
 				</button>
 			</Navbar>
 
-			<div className='flex-1 flex overflow-hidden min-h-0'>
+			<main className='flex-1 flex overflow-hidden min-h-0'>
 				<div className='flex-1 overflow-y-auto border-r bg-neutral-50 dark:bg-neutral-900'>
 					<div className='max-w-2xl mx-auto px-6 py-6'>
 						{pdfBytes ? (
@@ -71,7 +71,7 @@ export default function EditPage() {
 					onSave={handleSave}
 					isSaving={isSaving}
 				/>
-			</div>
+			</main>
 		</div>
 	);
 }

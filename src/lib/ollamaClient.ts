@@ -115,7 +115,7 @@ Return ONLY a JSON array. Each element: { "type": one of "Person"|"Organization"
 - Miscellaneous: account numbers, IDs, dates of birth, license plates
 
 Rules:
-- "value" must be the PII itself only — never include the label or field name (e.g. for "Name: John Smith" return "John Smith", not "Name: John Smith")
+- "value" must be the PII itself only, never include the label or field name (e.g. for "Name: John Smith" return "John Smith", not "Name: John Smith")
 - No generic words/job titles
 - No dates unless DOB
 - Return [] if none found

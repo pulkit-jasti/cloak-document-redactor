@@ -12,7 +12,7 @@ interface HeroProps {
 export default function Hero({ logoRef }: HeroProps) {
   return (
     <section aria-labelledby="hero-title" className="relative">
-      <div aria-hidden className="bg-grid pointer-events-none absolute inset-x-0 -top-20 h-[40rem]" />
+      <div aria-hidden className="bg-grid pointer-events-none absolute inset-x-0 -top-20 h-160" />
 
       <div className="relative mx-auto flex max-w-2xl flex-col items-center px-6 pt-10 pb-24 text-center md:pt-16">
         <p className="inline-flex items-center gap-2 rounded-full border bg-background/70 px-3.5 py-1.5 text-xs text-muted-foreground backdrop-blur">
