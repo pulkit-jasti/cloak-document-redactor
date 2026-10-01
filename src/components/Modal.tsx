@@ -44,12 +44,12 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
       className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm ${isClosing ? 'animate-out fade-out duration-150' : 'animate-in fade-in duration-150'}`}
       onClick={(e) => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className={`w-full max-w-sm mx-4 rounded-xl border border-border bg-background shadow-xl flex flex-col overflow-hidden ${isClosing ? 'animate-out fade-out zoom-out-95 slide-out-to-bottom-2 duration-150' : 'animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-200'}`}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <span className="text-sm font-semibold">{title}</span>
+      <div className={`w-full max-w-md mx-4 rounded-2xl border border-border bg-background shadow-xl flex flex-col overflow-hidden ${isClosing ? 'animate-out fade-out zoom-out-95 slide-out-to-bottom-2 duration-150' : 'animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-200'}`}>
+        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border">
+          <span className="text-base font-semibold">{title}</span>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="-mr-1.5 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             aria-label="Close"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

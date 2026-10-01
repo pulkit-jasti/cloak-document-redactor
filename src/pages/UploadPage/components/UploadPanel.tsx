@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { FileUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CloakingOverlay from "@/components/CloakingOverlay"
 import { ModelSelectorTrigger, ModelSelectorModal } from "@/components/ModelSelectorModal"
@@ -11,6 +12,7 @@ import { redactPdf } from "@/lib/redactPdf"
 import { countPdfPages } from "@/lib/countPdfPages"
 import { estimateSeconds } from "@/lib/estimateTime"
 import { hasAnyText } from "@/lib/pageStats"
+import CtaButton from "./CtaButton"
 import DropZone from "./DropZone"
 import FilePreview from "./FilePreview"
 import NoTextModal from "./NoTextModal"
@@ -26,12 +28,15 @@ export default function UploadPanel() {
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false)
   const [connectOllamaOpen, setConnectOllamaOpen] = useState(false)
   const [noTextOpen, setNoTextOpen] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const ollamaConnected = status === "available"
 
   const handleFileSelect = (file: File | null) => {
     if (file && file.type === "application/pdf") setSelectedFile(file)
   }
+
+  const openPicker = () => fileInputRef.current?.click()
 
   const handleCloak = async () => {
     if (!selectedFile) return
@@ -75,21 +80,52 @@ export default function UploadPanel() {
 
   return (
     <>
-      {isCloaking && <CloakingOverlay estimatedSeconds={estimatedSeconds} />}
-
       <div className="flex flex-col gap-5">
-        {selectedFile ? (
-          <FilePreview
-            file={selectedFile}
-            isCloaking={isCloaking}
-            onRemove={() => setSelectedFile(null)}
-            onCloak={handleCloak}
-          />
-        ) : (
-          <DropZone onFileSelect={handleFileSelect} />
-        )}
+        <div className="pointer-events-auto flex flex-col gap-4">
+          {selectedFile ? (
+            <FilePreview file={selectedFile} onRemove={() => setSelectedFile(null)} />
+          ) : (
+            <DropZone onFileSelect={handleFileSelect} onBrowse={openPicker} />
+          )}
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
+          <CtaButton
+            fullWidth
+            wrapperClassName="mb-6"
+            onClick={selectedFile ? handleCloak : openPicker}
+            disabled={isCloaking}
+          >
+            <span
+              key={selectedFile ? "cloak" : "choose"}
+              className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-300"
+            >
+              {selectedFile ? (
+                <>
+                  <span className="cta-spark" aria-hidden>✦</span>
+                  Cloak it
+                </>
+              ) : (
+                <>
+                  <FileUp className="size-4.5" aria-hidden />
+                  Choose a PDF
+                </>
+              )}
+            </span>
+          </CtaButton>
+
+          <input
+            ref={fileInputRef}
+            id="file-input"
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) => {
+              handleFileSelect(e.target.files?.[0] ?? null)
+              e.target.value = ""
+            }}
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-2 *:pointer-events-auto">
           <ModelSelectorTrigger onClick={() => setModelSelectorOpen(true)} />
           <Button
             variant="outline"
@@ -108,16 +144,19 @@ export default function UploadPanel() {
         </div>
       </div>
 
-      <NoTextModal
-        open={noTextOpen}
-        onClose={() => { setNoTextOpen(false); setSelectedFile(null) }}
-      />
-      <ModelSelectorModal open={modelSelectorOpen} onClose={() => setModelSelectorOpen(false)} />
-      <ConnectOllamaModal
-        open={connectOllamaOpen}
-        onClose={() => setConnectOllamaOpen(false)}
-        onConnected={() => { setConnectOllamaOpen(false); setModelSelectorOpen(true) }}
-      />
+      <div className="pointer-events-auto">
+        {isCloaking && <CloakingOverlay estimatedSeconds={estimatedSeconds} />}
+        <NoTextModal
+          open={noTextOpen}
+          onClose={() => { setNoTextOpen(false); setSelectedFile(null) }}
+        />
+        <ModelSelectorModal open={modelSelectorOpen} onClose={() => setModelSelectorOpen(false)} />
+        <ConnectOllamaModal
+          open={connectOllamaOpen}
+          onClose={() => setConnectOllamaOpen(false)}
+          onConnected={() => { setConnectOllamaOpen(false); setModelSelectorOpen(true) }}
+        />
+      </div>
     </>
   )
 }

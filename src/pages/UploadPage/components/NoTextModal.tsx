@@ -8,7 +8,7 @@ interface NoTextModalProps {
 export default function NoTextModal({ open, onClose }: NoTextModalProps) {
   return (
     <Modal open={open} onClose={onClose} title="Sorry, Cloak can't redact this PDF">
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-5 p-6">
         <p className="text-sm text-muted-foreground">
           This PDF looks like a scan or is made entirely of images, so there's no text for Cloak to read.
         </p>
@@ -17,7 +17,7 @@ export default function NoTextModal({ open, onClose }: NoTextModalProps) {
         </p>
         <button
           onClick={onClose}
-          className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+          className="mt-1 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
         >
           Choose another file
         </button>

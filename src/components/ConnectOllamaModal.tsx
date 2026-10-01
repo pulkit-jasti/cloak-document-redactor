@@ -18,7 +18,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="shrink-0 text-xs px-2 py-1 rounded border border-border bg-background hover:bg-muted transition-colors"
+      className="shrink-0 text-xs px-2.5 py-1.5 rounded-md border border-border bg-background hover:bg-muted transition-colors"
     >
       {copied ? 'Copied!' : 'Copy'}
     </button>
@@ -47,27 +47,27 @@ export function ConnectOllamaModal({ open, onClose, onConnected }: ConnectOllama
 
   return (
     <Modal open={open} onClose={onClose} title="Connect Ollama">
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-5 p-6">
         <p className="text-sm text-muted-foreground">
           Run this command in your terminal to start Ollama with access to this app:
         </p>
 
-        <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2.5">
+        <div className="flex items-center gap-3 rounded-lg bg-muted px-4 py-3">
           <code className="flex-1 text-xs font-mono">{COMMAND}</code>
           <CopyButton text={COMMAND} />
         </div>
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           If Ollama is already running, stop it first then run the command above.
           Once running, click below to verify the connection.
         </p>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3 pt-1">
           {error && <p className="text-xs text-destructive">{error}</p>}
           <button
             onClick={handleConnect}
             disabled={isChecking}
-            className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isChecking ? 'Connecting...' : 'Connect now'}
           </button>

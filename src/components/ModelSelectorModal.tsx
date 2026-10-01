@@ -18,7 +18,7 @@ function ModelRow({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-start justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+      className={`w-full flex items-start justify-between gap-3 rounded-lg px-3 py-3 text-left transition-colors ${
         selected ? 'bg-primary/10 text-foreground' : 'hover:bg-muted text-foreground'
       }`}
     >
@@ -58,9 +58,9 @@ export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
 
   return (
     <Modal open={open} onClose={onClose} title="Choose detection model">
-      <div className="flex flex-col gap-4 p-3 overflow-y-auto max-h-[60vh]">
-        <div className="flex flex-col gap-1">
-          <span className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Built-in</span>
+      <div className="flex flex-col gap-6 p-4 overflow-y-auto max-h-[65vh]">
+        <div className="flex flex-col gap-1.5">
+          <span className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">Built-in</span>
           <ModelRow
             name="BERT (built-in)"
             subtitle="Token classification · ~50MB · runs in browser"
@@ -69,8 +69,8 @@ export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <span className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Ollama</span>
+        <div className="flex flex-col gap-1.5">
+          <span className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">Ollama</span>
           {status === 'available' && models.length > 0 ? (
             models.map((m) => (
               <ModelRow
@@ -82,7 +82,7 @@ export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
               />
             ))
           ) : (
-            <p className="px-3 py-2 text-xs text-muted-foreground">
+            <p className="px-3 py-2 text-sm text-muted-foreground">
               Not connected. Use the Connect Ollama button to get started.
             </p>
           )}
