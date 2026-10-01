@@ -6,7 +6,6 @@ import { OllamaProvider } from '@/context/OllamaContext';
 import UploadPage from '@/pages/UploadPage';
 import PreviewPage from '@/pages/PreviewPage';
 import EditPage from '@/pages/EditPage';
-import DinoPage from '@/pages/DinoPage';
 import MobileGate from '@/components/MobileGate';
 import ModelLoadingIndicator from '@/components/ModelLoadingIndicator';
 import NERPipeline, {
@@ -58,7 +57,6 @@ export default function App() {
 						<Route path='/' element={<UploadPage />} />
 						<Route path='/preview' element={<RequirePdf><PreviewPage /></RequirePdf>} />
 						<Route path='/edit' element={<RequirePdf><EditPage /></RequirePdf>} />
-							<Route path='/dino' element={<DinoPage />} />
 					</Routes>
 				</CloakProvider>
 			</BrowserRouter>

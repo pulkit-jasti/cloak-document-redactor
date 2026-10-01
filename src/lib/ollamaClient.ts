@@ -1,5 +1,5 @@
 import type { Redaction } from '@/types'
-import { extractRegexEntities } from '@/lib/pdfPipeline'
+import { extractRegexEntities, type DetectPiiOptions } from '@/lib/pdfPipeline'
 
 const OLLAMA_BASE = 'http://localhost:11434'
 const PROBE_TIMEOUT_MS = 2000
@@ -125,8 +125,9 @@ Text:
 
 type OllamaEntity = { type: string; value: string }
 
-async function runOllamaPage(model: string, text: string): Promise<OllamaEntity[]> {
+async function runOllamaPage(model: string, text: string, signal?: AbortSignal): Promise<OllamaEntity[]> {
   const res = await fetch(`${OLLAMA_BASE}/api/chat`, {
+    signal,
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -173,14 +174,22 @@ async function runOllamaPage(model: string, text: string): Promise<OllamaEntity[
 
 export async function detectPiiWithOllama(
   pageTexts: string[],
-  model: string
+  model: string,
+  { signal, onProgress }: Pick<DetectPiiOptions, 'signal' | 'onProgress'> = {}
 ): Promise<Redaction[]> {
+  const total = pageTexts.length
+  let done = 0
+  onProgress?.({ stage: 'scanning', done, total, parallel: true })
   const pageResults = await Promise.all(
     pageTexts.map((text, pageIdx) =>
       Promise.all([
-        runOllamaPage(model, text),
+        runOllamaPage(model, text, signal),
         Promise.resolve(extractRegexEntities(text)),
-      ]).then(([entities, regexEntities]) => ({ pageNum: pageIdx + 1, text, entities, regexEntities }))
+      ]).then(([entities, regexEntities]) => {
+        done++
+        onProgress?.({ stage: 'scanning', done, total, parallel: true })
+        return { pageNum: pageIdx + 1, text, entities, regexEntities }
+      })
     )
   )
 

@@ -1,52 +1,120 @@
 import { useEffect, useState } from "react"
-import ChromeDinoGame from '@a7mddra/react-dino-game'
-import '@a7mddra/react-dino-game/dist/style.css'
-import { GAME_THRESHOLD_SECONDS } from "@/lib/estimateTime"
+import { Timer } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import type { CloakProgress } from "@/lib/pdfPipeline"
 
-const STATUS_PHRASES = [
-  "Scanning for names…",
-  "Finding phone numbers…",
-  "Detecting email addresses…",
-  "Looking for SSNs and ID numbers…",
-  "Applying redactions…",
+const IS_DEV = import.meta.env.VITE_ENV === "development"
+
+const FLAMES = [
+  { color: "#9e7aff", left: "-4%", duration: "8s", delay: "0s" },
+  { color: "#7ad7ff", left: "14%", duration: "9.5s", delay: "-3s" },
+  { color: "#fe8bbb", left: "32%", duration: "7.5s", delay: "-1.5s" },
+  { color: "#ffbd7a", left: "50%", duration: "9s", delay: "-4s" },
+  { color: "#9e7aff", left: "66%", duration: "10s", delay: "-2s" },
+  { color: "#fe8bbb", left: "80%", duration: "8.5s", delay: "-5s" },
 ]
 
-const PHRASE_DURATION_MS = 1200
-
-interface Props {
-  estimatedSeconds: number
+function describe(progress: CloakProgress): { label: string; percent: number | null } {
+  switch (progress.stage) {
+    case "model":
+      return { label: `Loading detection model… ${progress.percent}%`, percent: progress.percent }
+    case "reading":
+      return { label: "Reading your document…", percent: null }
+    case "scanning": {
+      const { done, total, parallel } = progress
+      const label = parallel
+        ? `Scanned ${done} of ${total} ${total === 1 ? "page" : "pages"}`
+        : `Scanning page ${done + 1} of ${total}`
+      return { label, percent: Math.round((done / total) * 100) }
+    }
+    case "redacting":
+      return { label: "Applying redactions…", percent: null }
+  }
 }
 
-export default function CloakingOverlay({ estimatedSeconds }: Props) {
-  const [phraseIndex, setPhraseIndex] = useState(0)
-  const showGame = estimatedSeconds >= GAME_THRESHOLD_SECONDS
+function AuroraFlames() {
+  return (
+    <div aria-hidden className="cloak-aurora">
+      {FLAMES.map((f, i) => (
+        <span
+          key={i}
+          className="cloak-aurora-flame"
+          style={
+            {
+              left: f.left,
+              "--flame": f.color,
+              "--flame-duration": f.duration,
+              "--flame-delay": f.delay,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
+  )
+}
+
+function DevStopwatch() {
+  const [startedAt] = useState(() => performance.now())
+  const [elapsed, setElapsed] = useState(0)
 
   useEffect(() => {
-    if (showGame) return
-    const timer = setInterval(() => {
-      setPhraseIndex((i) => (i + 1) % STATUS_PHRASES.length)
-    }, PHRASE_DURATION_MS)
-    return () => clearInterval(timer)
-  }, [showGame])
-
-  if (showGame) {
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background gap-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Cloaking your document…</h1>
-        <p className="text-sm text-muted-foreground">Your document is being redacted. Play while you wait.</p>
-        <div className="w-150">
-          <ChromeDinoGame />
-        </div>
-      </div>
-    )
-  }
+    const interval = setInterval(() => setElapsed(performance.now() - startedAt), 100)
+    return () => clearInterval(interval)
+  }, [startedAt])
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
-      <h1 className="text-2xl font-semibold tracking-tight mb-4">
-        Cloaking your document…
-      </h1>
-      <p className="text-muted-foreground text-sm">{STATUS_PHRASES[phraseIndex]}</p>
+    <div className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 font-mono text-xs tabular-nums text-muted-foreground">
+      <Timer className="size-3.5" aria-hidden />
+      {(elapsed / 1000).toFixed(1)}s
+    </div>
+  )
+}
+
+interface Props {
+  progress: CloakProgress
+  closing?: boolean
+  onCancel: () => void
+}
+
+export default function CloakingOverlay({ progress, closing = false, onCancel }: Props) {
+  const { label, percent } = describe(progress)
+
+  return (
+    <div
+      data-closing={closing || undefined}
+      className="cloak-overlay fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-background data-closing:pointer-events-none"
+    >
+      <AuroraFlames />
+      {IS_DEV && <DevStopwatch />}
+
+      <div className="cloak-overlay-content relative flex w-full max-w-sm flex-col items-center px-6 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Cloaking your document…</h1>
+        <p className="mt-3 text-sm text-muted-foreground tabular-nums" aria-live="polite">
+          {label}
+        </p>
+
+        <div
+          role="progressbar"
+          aria-label="Redaction progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent ?? undefined}
+          className="mt-5 h-1 w-full max-w-60 overflow-hidden rounded-full bg-muted"
+        >
+          {percent === null ? (
+            <div className="loader-indeterminate h-full w-1/3 rounded-full bg-foreground" />
+          ) : (
+            <div
+              className="h-full rounded-full bg-foreground transition-[width] duration-500 ease-out"
+              style={{ width: `${percent}%` }}
+            />
+          )}
+        </div>
+
+        <Button variant="ghost" className="mt-8 text-muted-foreground" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
     </div>
   )
 }

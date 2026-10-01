@@ -1,5 +1,4 @@
-import NERPipeline from "@/lib/nerPipeline"
-import type { TokenClassificationPipeline } from "@huggingface/transformers"
+import NERPipeline, { ModelStatus } from "@/lib/nerPipeline"
 import type { PageStats, Redaction } from "@/types"
 
 export const ENTITY_LABELS: Record<string, string> = {
@@ -32,7 +31,7 @@ function cleanTextForNer(text: string): string {
     .join("\n")
 }
 
-async function runNer(text: string, pipe: TokenClassificationPipeline) {
+async function runNer(text: string) {
   const cleaned = cleanTextForNer(text)
   const words = cleaned.split(/\s+/).filter(Boolean)
   const chunks: string[] = []
@@ -40,10 +39,7 @@ async function runNer(text: string, pipe: TokenClassificationPipeline) {
     chunks.push(words.slice(i, i + CHUNK_WORDS).join(" "))
     if (i + CHUNK_WORDS >= words.length) break
   }
-  const results = await Promise.all(
-    chunks.map((chunk) => pipe(chunk, { aggregation_strategy: "simple" }))
-  )
-  return results.flatMap((r) => Array.from(r as ArrayLike<(typeof r)[number]>))
+  return NERPipeline.run(chunks)
 }
 
 export function extractRegexEntities(text: string): Array<{ type: string; value: string }> {
@@ -57,15 +53,23 @@ export function extractRegexEntities(text: string): Array<{ type: string; value:
   return results
 }
 
+export type CloakProgress =
+  | { stage: 'model'; percent: number }
+  | { stage: 'reading' }
+  | { stage: 'scanning'; done: number; total: number; parallel: boolean }
+  | { stage: 'redacting' }
+
 export type ExtractedPdf = { pageTexts: string[]; pageStats: PageStats[] }
 
-export async function extractPdfTextPerPage(bytes: Uint8Array): Promise<ExtractedPdf> {
+export async function extractPdfTextPerPage(bytes: Uint8Array, signal?: AbortSignal): Promise<ExtractedPdf> {
   const worker = new Worker(
     new URL('../workers/mupdf.worker.ts', import.meta.url),
     { type: 'module' },
   )
   try {
     return await new Promise<ExtractedPdf>((resolve, reject) => {
+      if (signal?.aborted) return reject(signal.reason)
+      signal?.addEventListener('abort', () => reject(signal.reason), { once: true })
       const handler = (e: MessageEvent) => {
         worker.removeEventListener('message', handler)
         if (e.data.type === 'textExtracted') resolve({ pageTexts: e.data.pageTexts, pageStats: e.data.pageStats })
@@ -83,31 +87,40 @@ export async function extractPdfTextPerPage(bytes: Uint8Array): Promise<Extracte
 export interface DetectPiiOptions {
   mode?: 'bert' | 'ollama'
   ollamaModel?: string
+  signal?: AbortSignal
+  onProgress?: (progress: CloakProgress) => void
 }
 
 export async function detectPii(pageTexts: string[], options: DetectPiiOptions = {}): Promise<Redaction[]> {
-  const { mode = 'bert', ollamaModel } = options
+  const { mode = 'bert', ollamaModel, signal, onProgress } = options
 
   if (mode === 'ollama' && ollamaModel) {
     const { detectPiiWithOllama } = await import('@/lib/ollamaClient')
     try {
-      return await detectPiiWithOllama(pageTexts, ollamaModel)
+      return await detectPiiWithOllama(pageTexts, ollamaModel, { signal, onProgress })
     } catch (err) {
+      if (signal?.aborted) throw err
       console.warn('[Cloak] Ollama failed, falling back to BERT:', err)
     }
   }
 
-  const pipe = await NERPipeline.getInstance()
+  await NERPipeline.getInstance((event) => {
+    if (event.status === ModelStatus.Loading && event.total && event.progress != null) {
+      onProgress?.({ stage: 'model', percent: event.progress })
+    }
+  })
   const seen = new Set<string>()
   const redactions: Redaction[] = []
 
   for (let pageIdx = 0; pageIdx < pageTexts.length; pageIdx++) {
+    signal?.throwIfAborted()
+    onProgress?.({ stage: 'scanning', done: pageIdx, total: pageTexts.length, parallel: false })
     const pageNum = pageIdx + 1
     const text = pageTexts[pageIdx]
 
-    const nerResults = await runNer(text, pipe)
+    const nerResults = await runNer(text)
     for (const r of nerResults) {
-      const group = "entity_group" in r ? r.entity_group : undefined
+      const group = r.entity_group
       if (!group) continue
       const value = r.word.trim()
       if (!value || value.startsWith("##") || value.length < 3) continue

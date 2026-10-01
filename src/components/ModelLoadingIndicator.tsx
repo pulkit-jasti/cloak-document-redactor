@@ -9,6 +9,7 @@ export type ProgressEvent = {
 	status: ModelStatus;
 	file?: string;
 	progress?: number; // 0-100
+	total?: boolean;
 };
 
 const IS_DEV = import.meta.env.VITE_ENV === 'development';

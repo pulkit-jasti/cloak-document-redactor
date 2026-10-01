@@ -1,58 +1,104 @@
-import {
-	pipeline,
-	env,
-	type TokenClassificationPipeline,
-	type ProgressInfo,
-} from '@huggingface/transformers';
+import type { ProgressInfo } from '@huggingface/transformers';
 import {
 	ModelStatus,
 	type ProgressEvent,
 } from '@/components/ModelLoadingIndicator';
+import type { NerEntity } from '@/workers/ner.worker';
 
-export { ModelStatus, type ProgressEvent };
-
-const MODEL_BASE_URL = import.meta.env.VITE_MODEL_BASE_URL as string;
-const MODEL_ID = import.meta.env.VITE_MODEL_ID as string;
-const IS_DEV = import.meta.env.VITE_ENV === 'development';
+export { ModelStatus, type ProgressEvent, type NerEntity };
 
 type ProgressCallback = (event: ProgressEvent) => void;
 
-async function logDevInfo() {
-	const adapter = await navigator.gpu?.requestAdapter().catch(() => null);
-	console.log(`[Cloak] model ready: ${adapter ? 'webgpu' : 'wasm (cpu fallback)'}`);
-	if (adapter?.info) console.log('[Cloak] GPU info', adapter.info);
-}
+type Pending = { resolve: (results: NerEntity[]) => void; reject: (err: Error) => void };
 
 class NERPipeline {
-	private static instance: Promise<TokenClassificationPipeline> | null = null;
+	private static worker: Worker | null = null;
+	private static ready: Promise<void> | null = null;
+	private static resolveReady: (() => void) | null = null;
+	private static rejectReady: ((err: Error) => void) | null = null;
+	private static listeners = new Set<ProgressCallback>();
+	private static pending = new Map<number, Pending>();
+	private static nextId = 0;
 
-	static async getInstance(
-		onProgress?: ProgressCallback,
-	): Promise<TokenClassificationPipeline> {
-		if (this.instance) return this.instance;
+	private static emit(event: ProgressEvent) {
+		for (const listener of NERPipeline.listeners) listener(event);
+	}
 
-		if (IS_DEV) {
-			env.remoteHost = MODEL_BASE_URL;
-			env.remotePathTemplate = '{model}/';
-			env.allowLocalModels = false;
+	private static handleProgress(event: ProgressInfo) {
+		if (event.status === 'progress') {
+			NERPipeline.emit({ status: ModelStatus.Loading, file: event.file, progress: Math.round(event.progress) });
+		} else if (event.status === 'progress_total') {
+			NERPipeline.emit({ status: ModelStatus.Loading, progress: Math.round(event.progress), total: true });
+		}
+	}
+
+	private static failAll(err: Error) {
+		NERPipeline.rejectReady?.(err);
+		NERPipeline.ready = null;
+		for (const { reject } of NERPipeline.pending.values()) reject(err);
+		NERPipeline.pending.clear();
+	}
+
+	private static getWorker(): Worker {
+		if (NERPipeline.worker) return NERPipeline.worker;
+
+		const worker = new Worker(new URL('../workers/ner.worker.ts', import.meta.url), { type: 'module' });
+		worker.onmessage = (e: MessageEvent) => {
+			const msg = e.data;
+			if (msg.type === 'progress') {
+				NERPipeline.handleProgress(msg.event as ProgressInfo);
+			} else if (msg.type === 'ready') {
+				NERPipeline.emit({ status: ModelStatus.Ready });
+				NERPipeline.resolveReady?.();
+			} else if (msg.type === 'loadError') {
+				NERPipeline.rejectReady?.(new Error(msg.message));
+				NERPipeline.ready = null;
+			} else if (msg.type === 'result' || msg.type === 'runError') {
+				const pending = NERPipeline.pending.get(msg.id);
+				if (!pending) return;
+				NERPipeline.pending.delete(msg.id);
+				if (msg.type === 'result') pending.resolve(msg.results as NerEntity[]);
+				else pending.reject(new Error(msg.message));
+			}
+		};
+		worker.onerror = (e) => {
+			NERPipeline.worker = null;
+			worker.terminate();
+			NERPipeline.failAll(new Error(e.message || 'NER worker crashed'));
+		};
+
+		NERPipeline.worker = worker;
+		return worker;
+	}
+
+	static getInstance(onProgress?: ProgressCallback): Promise<void> {
+		const worker = NERPipeline.getWorker();
+
+		if (!NERPipeline.ready) {
+			NERPipeline.ready = new Promise<void>((resolve, reject) => {
+				NERPipeline.resolveReady = resolve;
+				NERPipeline.rejectReady = reject;
+			});
+			worker.postMessage({ type: 'load' });
 		}
 
-		this.instance = pipeline('token-classification', MODEL_ID, {
-			progress_callback: (event: ProgressInfo) => {
-				if (event.status === 'progress') {
-					onProgress?.({
-						status: ModelStatus.Loading,
-						file: event.file,
-						progress: Math.round(event.progress),
-					});
-				} else if (event.status === 'ready') {
-					logDevInfo();
-					onProgress?.({ status: ModelStatus.Ready });
-				}
-			},
-		}) as Promise<TokenClassificationPipeline>;
+		const ready = NERPipeline.ready;
+		if (onProgress) {
+			NERPipeline.listeners.add(onProgress);
+			const remove = () => NERPipeline.listeners.delete(onProgress);
+			ready.then(remove, remove);
+		}
 
-		return this.instance;
+		return ready;
+	}
+
+	static run(chunks: string[]): Promise<NerEntity[]> {
+		const worker = NERPipeline.getWorker();
+		const id = NERPipeline.nextId++;
+		return new Promise<NerEntity[]>((resolve, reject) => {
+			NERPipeline.pending.set(id, { resolve, reject });
+			worker.postMessage({ type: 'run', id, chunks });
+		});
 	}
 }
 

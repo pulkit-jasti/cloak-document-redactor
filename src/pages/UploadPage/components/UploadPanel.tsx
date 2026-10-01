@@ -7,10 +7,8 @@ import { ModelSelectorTrigger, ModelSelectorModal } from "@/components/ModelSele
 import { ConnectOllamaModal } from "@/components/ConnectOllamaModal"
 import { useCloak } from "@/context/CloakContext"
 import { useOllama } from "@/context/OllamaContext"
-import { extractPdfTextPerPage, detectPii } from "@/lib/pdfPipeline"
+import { extractPdfTextPerPage, detectPii, type CloakProgress } from "@/lib/pdfPipeline"
 import { redactPdf } from "@/lib/redactPdf"
-import { countPdfPages } from "@/lib/countPdfPages"
-import { estimateSeconds } from "@/lib/estimateTime"
 import { hasAnyText } from "@/lib/pageStats"
 import CtaButton from "./CtaButton"
 import DropZone from "./DropZone"
@@ -18,19 +16,24 @@ import FilePreview from "./FilePreview"
 import NoTextModal from "./NoTextModal"
 import OllamaIcon from "@/assets/ollama.svg?react"
 
+const IS_DEV = import.meta.env.VITE_ENV === "development"
+const OVERLAY_EXIT_MS = 450
+
 export default function UploadPanel() {
   const navigate = useNavigate()
-  const { setPdf, setEntities, setRedactedBytes, reset } = useCloak()
-  const { status, selectedModel, models } = useOllama()
+  const { setPdf, setEntities, setRedactedBytes } = useCloak()
+  const { status, selectedModel } = useOllama()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [isCloaking, setIsCloaking] = useState(false)
-  const [estimatedSeconds, setEstimatedSeconds] = useState(0)
+  const [progress, setProgress] = useState<CloakProgress | null>(null)
+  const [isClosingOverlay, setIsClosingOverlay] = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false)
   const [connectOllamaOpen, setConnectOllamaOpen] = useState(false)
   const [noTextOpen, setNoTextOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const ollamaConnected = status === "available"
+  const isCloaking = progress !== null
 
   const handleFileSelect = (file: File | null) => {
     if (file && file.type === "application/pdf") setSelectedFile(file)
@@ -40,42 +43,67 @@ export default function UploadPanel() {
 
   const handleCloak = async () => {
     if (!selectedFile) return
+    const controller = new AbortController()
+    abortRef.current = controller
+    const { signal } = controller
+    const startedAt = performance.now()
+    let modelUsed = selectedModel ?? "BERT (built-in)"
+    const report = (next: CloakProgress) => {
+      if (next.stage === "scanning" && !next.parallel && selectedModel) {
+        modelUsed = `BERT (built-in), fallback from ${selectedModel}`
+      }
+      if (!signal.aborted) setProgress(next)
+    }
+
+    report({ stage: "reading" })
     const url = URL.createObjectURL(selectedFile)
-    const bytes = new Uint8Array(await selectedFile.arrayBuffer())
-    setPdf(url, bytes)
-
-    const pageCount = await countPdfPages(bytes)
-    const mode = selectedModel ? 'ollama' : 'bert'
-    const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator
-    const ollamaModel = models.find((m) => m.name === selectedModel)
-    const sizeGB = ollamaModel ? ollamaModel.size / 1e9 : 4
-    setEstimatedSeconds(estimateSeconds(pageCount, mode, hasWebGPU, sizeGB))
-
-    setIsCloaking(true)
 
     try {
-      const { pageTexts, pageStats } = await extractPdfTextPerPage(bytes)
+      const bytes = new Uint8Array(await selectedFile.arrayBuffer())
+      const { pageTexts, pageStats } = await extractPdfTextPerPage(bytes, signal)
       if (!hasAnyText(pageStats)) {
-        reset()
-        setIsCloaking(false)
+        URL.revokeObjectURL(url)
+        setProgress(null)
         setNoTextOpen(true)
         return
       }
 
       const redactions = await detectPii(pageTexts, {
-        mode: selectedModel ? 'ollama' : 'bert',
+        mode: selectedModel ? "ollama" : "bert",
         ollamaModel: selectedModel ?? undefined,
+        signal,
+        onProgress: report,
       })
-      setEntities(redactions)
 
+      report({ stage: "redacting" })
       const approvedEntities = redactions.filter((r) => r.approved).map((r) => r.value)
-      const redacted = await redactPdf(bytes, approvedEntities)
+      const redacted = await redactPdf(bytes, approvedEntities, signal)
+      signal.throwIfAborted()
+
+      if (IS_DEV) {
+        const seconds = ((performance.now() - startedAt) / 1000).toFixed(1)
+        console.log(`[Cloak] Cloaked in ${seconds}s | model: ${modelUsed} | pages: ${pageTexts.length}`)
+      }
+
+      setPdf(url, bytes)
+      setEntities(redactions)
       setRedactedBytes(redacted)
+      navigate("/preview")
     } catch (err) {
+      URL.revokeObjectURL(url)
+      if (signal.aborted) return
+      setProgress(null)
       console.error("[Cloak] pipeline error:", err)
     }
+  }
 
-    navigate("/preview")
+  const handleCancel = () => {
+    abortRef.current?.abort()
+    setIsClosingOverlay(true)
+    setTimeout(() => {
+      setProgress(null)
+      setIsClosingOverlay(false)
+    }, OVERLAY_EXIT_MS)
   }
 
   return (
@@ -145,7 +173,9 @@ export default function UploadPanel() {
       </div>
 
       <div className="pointer-events-auto">
-        {isCloaking && <CloakingOverlay estimatedSeconds={estimatedSeconds} />}
+        {progress && (
+          <CloakingOverlay progress={progress} closing={isClosingOverlay} onCancel={handleCancel} />
+        )}
         <NoTextModal
           open={noTextOpen}
           onClose={() => { setNoTextOpen(false); setSelectedFile(null) }}

@@ -14,8 +14,7 @@ type RenderMsg       = { id: number; type: 'render';      pageIndex: number; sca
 type SearchPageMsg   = { id: number; type: 'searchPage';  pageIndex: number; values: string[] }
 type RedactMsg       = { id: number; type: 'redact';      bytes: Uint8Array; entities: string[] }
 type ExtractTextMsg  = { id: number; type: 'extractText'; bytes: Uint8Array }
-type CountPagesMsg   = { id: number; type: 'countPages';  bytes: Uint8Array }
-type WorkerInMsg     = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg | ExtractTextMsg | CountPagesMsg
+type WorkerInMsg     = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg | ExtractTextMsg
 
 let doc: MupdfDocument | null = null
 
@@ -229,12 +228,6 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
         { id: msg.id, type: 'redacted', bytes: output },
         { transfer: [output.buffer as ArrayBuffer] },
       )
-
-    } else if (msg.type === 'countPages') {
-      const countDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf')
-      const pageCount = countDoc.countPages()
-      countDoc.destroy()
-      self.postMessage({ id: msg.id, type: 'pagesCounted', pageCount })
 
     } else if (msg.type === 'extractText') {
       const extractDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf')
