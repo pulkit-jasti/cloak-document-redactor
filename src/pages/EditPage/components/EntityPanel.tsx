@@ -1,45 +1,46 @@
 import { Button } from '@/components/ui/button'
-import type { Redaction } from '@/types'
+import type { MatchSummary } from '@/components/PdfViewer'
+import type { EntityGroup } from '../groupRedactions'
 import EntityCard from './EntityCard'
 
 interface Props {
-  redactions: Redaction[]
-  onToggle: (id: string) => void
+  groups: EntityGroup[]
+  matches: MatchSummary
+  matchesComplete: boolean
+  onToggle: (key: string) => void
   onSave: () => void
   isSaving?: boolean
 }
 
-export default function EntityPanel({ redactions, onToggle, onSave, isSaving }: Props) {
-  const pages = [...new Set(redactions.map((r) => r.page))].sort((a, b) => a - b)
+export default function EntityPanel({ groups, matches, matchesComplete, onToggle, onSave, isSaving }: Props) {
+  const found = groups
+    .filter((g) => (matches[g.value]?.count ?? 0) > 0)
+    .sort((a, b) => matches[a.value].pages[0] - matches[b.value].pages[0])
 
   return (
-    <div className='w-80 flex flex-col overflow-hidden'>
-      <div className='flex-1 overflow-y-auto p-4 space-y-6 min-h-0'>
-        {redactions.length === 0 && (
+    <div className='w-96 flex flex-col overflow-hidden'>
+      <div className='flex-1 overflow-y-auto p-4 min-h-0'>
+        {groups.length > 0 && !matchesComplete ? (
+          <p className='px-1 py-12 text-center text-sm text-muted-foreground'>Finding matches in your document…</p>
+        ) : found.length === 0 ? (
           <div className='flex flex-col items-center justify-center h-full gap-2 text-center px-4 py-12'>
-            <p className='text-sm font-medium'>No PII detected</p>
+            <p className='text-sm font-medium'>Nothing personal found</p>
             <p className='text-xs text-muted-foreground'>
-              The document appears clean. Nothing to redact.
+              This document looks clean.
             </p>
           </div>
-        )}
-        {pages.map((page) => (
-          <div key={page}>
-            <p className='text-xs font-medium text-muted-foreground mb-2'>Page {page}</p>
-            <div className='space-y-2'>
-              {redactions
-                .filter((r) => r.page === page)
-                .map((r) => (
-                  <EntityCard key={r.id} redaction={r} onToggle={onToggle} />
-                ))}
-            </div>
+        ) : (
+          <div className='space-y-2'>
+            {found.map((g) => (
+              <EntityCard key={g.key} group={g} match={matches[g.value]} onToggle={onToggle} />
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
       <div className='shrink-0 p-4 border-t'>
         <Button className='w-full' onClick={onSave} disabled={isSaving}>
-          {isSaving ? 'Applying redactions…' : 'Save & Preview'}
+          {isSaving ? 'Applying changes…' : 'Apply changes'}
         </Button>
       </div>
     </div>

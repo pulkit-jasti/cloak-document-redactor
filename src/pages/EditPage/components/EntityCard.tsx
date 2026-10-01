@@ -1,27 +1,49 @@
-import type { Redaction } from '@/types'
+import { useId } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import type { EntityGroup } from '../groupRedactions'
 
 interface Props {
-  redaction: Redaction
-  onToggle: (id: string) => void
+  group: EntityGroup
+  match: { pages: number[]; count: number }
+  onToggle: (key: string) => void
 }
 
-export default function EntityCard({ redaction: r, onToggle }: Props) {
+export default function EntityCard({ group: g, match, onToggle }: Props) {
+  const checkboxId = useId()
+
   return (
-    <div className='flex items-center gap-2 rounded-lg border px-3 py-2 bg-card'>
-      <div className='flex-1 min-w-0'>
-        <span className='text-xs text-muted-foreground'>{r.type}</span>
-        <p className='text-sm font-medium truncate'>{r.value}</p>
+    <label
+      htmlFor={checkboxId}
+      className='flex cursor-pointer items-stretch gap-3 rounded-lg border px-3 py-2.5 bg-card transition-colors hover:bg-muted/40'
+    >
+      <div className={`flex-1 min-w-0 transition-opacity ${g.approved ? '' : 'opacity-50'}`}>
+        <span className='text-xs text-muted-foreground'>{g.type}</span>
+        <p className='text-sm font-medium truncate'>{g.value}</p>
+        <div className='mt-1.5 flex flex-wrap items-center gap-1'>
+          <span className='mr-0.5 text-xs text-muted-foreground'>
+            {match.pages.length === 1 ? 'Page' : 'Pages'}
+          </span>
+          {match.pages.map((page) => (
+            <Badge key={page} variant='outline' className='h-5 min-w-5 rounded-md px-1.5 tabular-nums'>
+              {page}
+            </Badge>
+          ))}
+        </div>
       </div>
-      <button
-        onClick={() => onToggle(r.id)}
-        className={`shrink-0 text-xs px-2 py-1 rounded-md border font-medium transition-colors ${
-          r.approved
-            ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/50'
-            : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/50'
-        }`}
-      >
-        {r.approved ? 'Redact' : 'Dismiss'}
-      </button>
-    </div>
+      <div className='flex shrink-0 flex-col items-end justify-between gap-2'>
+        <span className='flex items-center gap-2 text-xs font-medium'>
+          Redact
+          <Checkbox
+            id={checkboxId}
+            checked={g.approved}
+            onCheckedChange={() => onToggle(g.key)}
+          />
+        </span>
+        <Badge variant='secondary' className='h-5 px-2 tabular-nums'>
+          {match.count} {match.count === 1 ? 'match' : 'matches'}
+        </Badge>
+      </div>
+    </label>
   )
 }

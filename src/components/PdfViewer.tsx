@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { TriangleAlert } from 'lucide-react'
 import type { PageStats } from '@/types'
 import { formatPageList, imageOnlyPages } from '@/lib/pageStats'
@@ -8,8 +8,12 @@ type PageSize = { width: number; height: number }
 export type PdfHighlight = {
   value: string
   approved: boolean
-  page: number // 1-indexed
 }
+
+type Box = [number, number, number, number]
+type PageMatches = Record<string, { rects: Box[]; count: number }>
+
+export type MatchSummary = Record<string, { pages: number[]; count: number }>
 
 function PdfPage({
   pageIndex,
@@ -28,7 +32,7 @@ function PdfPage({
   src: string | null
   onVisible: (pageIndex: number) => void
   onRatioChange: (pageIndex: number, ratio: number) => void
-  rects: Record<string, [number, number, number, number][]>
+  rects: PageMatches
   highlights: PdfHighlight[]
   imageOnly: boolean
 }) {
@@ -84,14 +88,23 @@ function PdfPage({
     if (!src || highlights.length === 0) return
 
     const scale = containerWidth / size.width
-    ctx.lineWidth = 2
+    const lineWidth = 1.5
+    const inset = lineWidth / 2
+    ctx.lineWidth = lineWidth
 
     for (const h of highlights) {
-      const entityRects = rects[h.value]
+      const entityRects = rects[h.value]?.rects
       if (!entityRects) continue
-      ctx.strokeStyle = h.approved ? 'rgba(22, 163, 74, 0.85)' : 'rgba(220, 38, 38, 0.85)'
+      ctx.setLineDash(h.approved ? [] : [4, 3])
+      ctx.strokeStyle = h.approved ? 'rgba(10, 10, 10, 0.9)' : 'rgba(115, 115, 115, 0.9)'
+      ctx.fillStyle = 'rgba(10, 10, 10, 0.12)'
       for (const [x0, y0, x1, y1] of entityRects) {
-        ctx.strokeRect(x0 * scale, y0 * scale, (x1 - x0) * scale, (y1 - y0) * scale)
+        const x = x0 * scale
+        const y = y0 * scale
+        const w = (x1 - x0) * scale
+        const height = (y1 - y0) * scale
+        if (h.approved) ctx.fillRect(x, y, w, height)
+        ctx.strokeRect(x + inset, y + inset, w - lineWidth, height - lineWidth)
       }
     }
   }, [src, rects, highlights, containerWidth, size, cssHeight])
@@ -143,9 +156,11 @@ function PdfPage({
 export default function PdfViewer({
   pdfBytes,
   highlights,
+  onMatches,
 }: {
   pdfBytes: Uint8Array | null
   highlights?: PdfHighlight[]
+  onMatches?: (summary: MatchSummary, complete: boolean) => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const workerRef = useRef<Worker | null>(null)
@@ -163,10 +178,12 @@ export default function PdfViewer({
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [imageOnly, setImageOnly] = useState<number[]>([])
-  // pageIndex -> { value -> rects[] }
-  const [pageRects, setPageRects] = useState<Map<number, Record<string, [number, number, number, number][]>>>(
-    new Map(),
+  const [pageRects, setPageRects] = useState<Map<number, PageMatches>>(new Map())
+  const searchValues = useMemo(
+    () => [...new Set(highlights?.map((h) => h.value) ?? [])].sort(),
+    [highlights],
   )
+  const searchKey = searchValues.join('\u0000')
 
   // Track container width
   useEffect(() => {
@@ -181,15 +198,8 @@ export default function PdfViewer({
   const triggerSearch = useCallback((pageCount: number) => {
     const hs = highlightsRef.current
     if (!hs || hs.length === 0 || !workerRef.current) return
-    const byPage = new Map<number, string[]>()
-    for (const h of hs) {
-      const idx = h.page - 1
-      if (idx < 0 || idx >= pageCount) continue
-      const vals = byPage.get(idx) ?? []
-      if (!vals.includes(h.value)) vals.push(h.value)
-      byPage.set(idx, vals)
-    }
-    for (const [pageIdx, values] of byPage) {
+    const values = [...new Set(hs.map((h) => h.value))]
+    for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
       const id = msgIdRef.current++
       workerRef.current.postMessage({ id, type: 'searchPage', pageIndex: pageIdx, values })
     }
@@ -216,7 +226,6 @@ export default function PdfViewer({
         ratiosRef.current = new Array(msg.pageCount as number).fill(0)
         setCurrentPage(1)
         setPageRects(new Map())
-        triggerSearch(msg.pageCount as number)
       } else if (msg.type === 'rendered') {
         const blob = new Blob([msg.png as Uint8Array<ArrayBuffer>], { type: 'image/png' })
         const url = URL.createObjectURL(blob)
@@ -228,7 +237,7 @@ export default function PdfViewer({
         })
       } else if (msg.type === 'searchResult') {
         const pageIdx = msg.pageIndex as number
-        const results = msg.results as Record<string, [number, number, number, number][]>
+        const results = msg.results as PageMatches
         setPageRects((prev) => new Map(prev).set(pageIdx, results))
       } else if (msg.type === 'error') {
         console.error('[MuPDF Worker]', msg.message)
@@ -247,13 +256,27 @@ export default function PdfViewer({
       blobUrlsRef.current.forEach(URL.revokeObjectURL)
       blobUrlsRef.current = []
     }
-  }, [triggerSearch])
+  }, [])
 
-  // Re-trigger search whenever highlights change (or document finishes loading)
   useEffect(() => {
-    if (!highlights || highlights.length === 0 || pageSizes.length === 0) return
+    if (!searchKey || pageSizes.length === 0) return
     triggerSearch(pageSizes.length)
-  }, [highlights, pageSizes.length, triggerSearch])
+  }, [searchKey, pageSizes.length, triggerSearch])
+
+  useEffect(() => {
+    if (!onMatches || pageSizes.length === 0) return
+    const summary: MatchSummary = {}
+    for (const value of searchValues) summary[value] = { pages: [], count: 0 }
+    for (const [pageIdx, results] of [...pageRects.entries()].sort(([a], [b]) => a - b)) {
+      for (const [value, { count }] of Object.entries(results)) {
+        const entry = summary[value]
+        if (!entry) continue
+        entry.pages.push(pageIdx + 1)
+        entry.count += count
+      }
+    }
+    onMatches(summary, pageRects.size === pageSizes.length)
+  }, [pageRects, pageSizes.length, searchValues, onMatches])
 
   // Load document when bytes change
   useEffect(() => {
@@ -338,7 +361,7 @@ export default function PdfViewer({
               onVisible={handlePageVisible}
               onRatioChange={handleRatioChange}
               rects={pageRects.get(i) ?? {}}
-              highlights={highlights?.filter((h) => h.page === i + 1) ?? []}
+              highlights={highlights ?? []}
               imageOnly={imageOnly.includes(i + 1)}
             />
           ))

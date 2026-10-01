@@ -90,6 +90,64 @@ function spatialTextFromJson(jsonStr: string): string {
     .join('\n')
 }
 
+type Box = [number, number, number, number]
+type PageGlyphs = { text: string; unitToGlyph: number[]; quads: (number[] | null)[] }
+
+function readGlyphs(page: ReturnType<MupdfDocument['loadPage']>): PageGlyphs {
+  const stext = page.toStructuredText('preserve-whitespace')
+  let text = ''
+  const unitToGlyph: number[] = []
+  const quads: (number[] | null)[] = []
+  const push = (c: string, quad: number[] | null) => {
+    quads.push(quad)
+    for (let i = 0; i < c.length; i++) unitToGlyph.push(quads.length - 1)
+    text += c
+  }
+  stext.walk({
+    onChar: (c, _origin, _font, _size, quad) => push(c, [...quad]),
+    endLine: () => push(' ', null),
+  })
+  stext.destroy()
+  return { text, unitToGlyph, quads }
+}
+
+function wordPattern(value: string): RegExp | null {
+  const parts = value.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return null
+  const body = parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+')
+  return new RegExp(`(?<![\\p{L}\\p{N}_])${body}(?![\\p{L}\\p{N}_])`, 'giu')
+}
+
+function findWholeWord(glyphs: PageGlyphs, value: string): Box[][] {
+  const pattern = wordPattern(value)
+  if (!pattern) return []
+  const matches: Box[][] = []
+  for (const m of glyphs.text.matchAll(pattern)) {
+    const first = glyphs.unitToGlyph[m.index]
+    const last = glyphs.unitToGlyph[m.index + m[0].length - 1]
+    const boxes: Box[] = []
+    let current: Box | null = null
+    for (let g = first; g <= last; g++) {
+      const q = glyphs.quads[g]
+      if (!q) {
+        if (current) boxes.push(current)
+        current = null
+        continue
+      }
+      const x0 = Math.min(q[0], q[2], q[4], q[6])
+      const y0 = Math.min(q[1], q[3], q[5], q[7])
+      const x1 = Math.max(q[0], q[2], q[4], q[6])
+      const y1 = Math.max(q[1], q[3], q[5], q[7])
+      current = current
+        ? [Math.min(current[0], x0), Math.min(current[1], y0), Math.max(current[2], x1), Math.max(current[3], y1)]
+        : [x0, y0, x1, y1]
+    }
+    if (current) boxes.push(current)
+    if (boxes.length > 0) matches.push(boxes)
+  }
+  return matches
+}
+
 self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
   const mupdf = await getMupdf()
   const msg = e.data
@@ -129,22 +187,11 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
     } else if (msg.type === 'searchPage') {
       if (!doc) throw new Error('No document loaded')
       const page = doc.loadPage(msg.pageIndex)
-      // Returns value -> list of bounding rects [x0, y0, x1, y1] in PDF units
-      const results: Record<string, [number, number, number, number][]> = {}
+      const glyphs = readGlyphs(page)
+      const results: Record<string, { rects: Box[]; count: number }> = {}
       for (const value of msg.values) {
-        if (!value.trim()) continue
-        const hits = page.search(value, null) as number[][][]
-        const rects: [number, number, number, number][] = []
-        for (const quads of hits) {
-          for (const quad of quads) {
-            const x0 = Math.min(quad[0], quad[2], quad[4], quad[6])
-            const y0 = Math.min(quad[1], quad[3], quad[5], quad[7])
-            const x1 = Math.max(quad[0], quad[2], quad[4], quad[6])
-            const y1 = Math.max(quad[1], quad[3], quad[5], quad[7])
-            rects.push([x0, y0, x1, y1])
-          }
-        }
-        if (rects.length > 0) results[value] = rects
+        const matches = findWholeWord(glyphs, value)
+        if (matches.length > 0) results[value] = { rects: matches.flat(), count: matches.length }
       }
       page.destroy()
       self.postMessage({ id: msg.id, type: 'searchResult', pageIndex: msg.pageIndex, results })
@@ -158,20 +205,12 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
         const page = pdfDoc.loadPage(i)
         let hasAnnotation = false
 
+        const glyphs = readGlyphs(page)
         for (const entity of msg.entities) {
-          if (!entity.trim()) continue
-          const hits = (page as PDFPage).search(entity, null)
-          for (const quads of hits) {
-            for (const quad of quads) {
-              // quad is a flat 8-float array: [ul.x, ul.y, ur.x, ur.y, ll.x, ll.y, lr.x, lr.y]
-              const annot = (page as PDFPage).createAnnotation('Redact')
-              const x0 = Math.min(quad[0], quad[2], quad[4], quad[6])
-              const y0 = Math.min(quad[1], quad[3], quad[5], quad[7])
-              const x1 = Math.max(quad[0], quad[2], quad[4], quad[6])
-              const y1 = Math.max(quad[1], quad[3], quad[5], quad[7])
-              annot.setRect([x0, y0, x1, y1])
-              hasAnnotation = true
-            }
+          for (const box of findWholeWord(glyphs, entity).flat()) {
+            const annot = (page as PDFPage).createAnnotation('Redact')
+            annot.setRect(box)
+            hasAnnotation = true
           }
         }
 

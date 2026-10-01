@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Redaction } from '@/types';
 import Navbar from '@/components/Navbar';
-import PdfViewer from '@/components/PdfViewer';
+import PdfViewer, { type MatchSummary } from '@/components/PdfViewer';
 import { useCloak } from '@/context/CloakContext';
 import { redactPdf } from '@/lib/redactPdf';
 import EntityPanel from './components/EntityPanel';
+import { groupRedactions, groupKey } from './groupRedactions';
 
 export default function EditPage() {
 	const navigate = useNavigate();
@@ -14,10 +15,26 @@ export default function EditPage() {
 
 	const [redactions, setRedactions] = useState<Redaction[]>(entities ?? []);
 	const [isSaving, setIsSaving] = useState(false);
+	const [matches, setMatches] = useState<{ summary: MatchSummary; complete: boolean }>({
+		summary: {},
+		complete: false,
+	});
 
-	const toggleRedaction = (id: string) => {
+	const groups = useMemo(() => groupRedactions(redactions), [redactions]);
+	const highlights = useMemo(
+		() => groups.map(({ value, approved }) => ({ value, approved })),
+		[groups],
+	);
+
+	const handleMatches = useCallback(
+		(summary: MatchSummary, complete: boolean) => setMatches({ summary, complete }),
+		[],
+	);
+
+	const toggleGroup = (key: string) => {
+		const target = !groups.find((g) => g.key === key)?.approved;
 		setRedactions((prev) =>
-			prev.map((r) => (r.id === id ? { ...r, approved: !r.approved } : r)),
+			prev.map((r) => (groupKey(r.value) === key ? { ...r, approved: target } : r)),
 		);
 	};
 
@@ -26,9 +43,7 @@ export default function EditPage() {
 		setIsSaving(true);
 		try {
 			setEntities(redactions);
-			const approvedEntities = redactions
-				.filter((r) => r.approved)
-				.map((r) => r.value);
+			const approvedEntities = groups.filter((g) => g.approved).map((g) => g.value);
 			const redacted = await redactPdf(pdfBytes, approvedEntities);
 			setRedactedBytes(redacted);
 			navigate('/preview');
@@ -54,7 +69,7 @@ export default function EditPage() {
 				<div className='flex-1 overflow-y-auto border-r bg-neutral-50 dark:bg-neutral-900'>
 					<div className='max-w-2xl mx-auto px-6 py-6'>
 						{pdfBytes ? (
-							<PdfViewer pdfBytes={pdfBytes} highlights={redactions} />
+							<PdfViewer pdfBytes={pdfBytes} highlights={highlights} onMatches={handleMatches} />
 						) : (
 							<div className='rounded-xl bg-muted flex items-center justify-center min-h-120'>
 								<p className='text-sm text-muted-foreground'>
@@ -66,8 +81,10 @@ export default function EditPage() {
 				</div>
 
 				<EntityPanel
-					redactions={redactions}
-					onToggle={toggleRedaction}
+					groups={groups}
+					matches={matches.summary}
+					matchesComplete={matches.complete}
+					onToggle={toggleGroup}
 					onSave={handleSave}
 					isSaving={isSaving}
 				/>
