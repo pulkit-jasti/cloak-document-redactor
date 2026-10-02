@@ -10,9 +10,10 @@ import GithubIcon from '@/assets/github.svg?react';
 type Props = {
 	children?: React.ReactNode;
 	overHero?: boolean;
+	title?: string | null;
 };
 
-export default function Navbar({ children, overHero = false }: Props) {
+export default function Navbar({ children, overHero = false, title }: Props) {
 	const { reset } = useCloak();
 	const { theme, toggleTheme } = useTheme();
 
@@ -35,6 +36,14 @@ export default function Navbar({ children, overHero = false }: Props) {
 				<Logo className='h-5 w-auto' />
 			</Link>
 			{children}
+			{title && (
+				<span
+					title={title}
+					className='absolute left-1/2 max-w-[40%] -translate-x-1/2 truncate text-sm font-medium'
+				>
+					{title}
+				</span>
+			)}
 			<div className='flex-1' />
 			<Button variant='ghost' size='icon' asChild>
 				<a href={LINKS.repo} target='_blank' rel='noopener noreferrer' aria-label='Cloak on GitHub'>

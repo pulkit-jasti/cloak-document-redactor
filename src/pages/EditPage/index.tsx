@@ -10,7 +10,7 @@ import { groupRedactions, groupKey } from './groupRedactions';
 
 export default function EditPage() {
 	const navigate = useNavigate();
-	const { pdfBytes, entities, setEntities, setRedactedBytes } =
+	const { pdfBytes, fileName, entities, setEntities, setRedactedBytes } =
 		useCloak();
 
 	const [redactions, setRedactions] = useState<Redaction[]>(entities ?? []);
@@ -56,7 +56,7 @@ export default function EditPage() {
 
 	return (
 		<div className='h-screen flex flex-col'>
-			<Navbar>
+			<Navbar title={fileName}>
 				<button
 					onClick={() => navigate('/preview')}
 					className='text-sm text-muted-foreground hover:text-foreground'

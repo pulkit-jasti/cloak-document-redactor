@@ -13,7 +13,7 @@ function redactedFileName(original: string | null) {
 
 export default function PreviewPage() {
   const navigate = useNavigate()
-  const { pdfBytes, fileName, redactedBytes, entities, reset } = useCloak()
+  const { pdfBytes, fileName, redactedBytes, entities, cloakStats, reset } = useCloak()
 
   const handleDownload = () => {
     const bytes = redactedBytes
@@ -36,19 +36,26 @@ export default function PreviewPage() {
 
   return (
     <div className='h-screen flex flex-col'>
-      <Navbar />
+      <Navbar title={fileName} />
 
       <main className='flex-1 flex flex-col min-h-0'>
-        <div className='flex-1 overflow-y-auto min-h-0 bg-neutral-50 dark:bg-neutral-900'>
-          <div className='max-w-2xl mx-auto px-4 py-8'>
-            {previewBytes ? (
-              <PdfViewer pdfBytes={previewBytes} />
-            ) : (
-              <div className='rounded-xl bg-muted flex items-center justify-center min-h-120'>
-                <p className='text-sm text-muted-foreground'>No document loaded.</p>
-              </div>
-            )}
+        <div className='relative flex-1 min-h-0'>
+          <div className='h-full overflow-y-auto bg-neutral-50 dark:bg-neutral-900'>
+            <div className='max-w-2xl mx-auto px-4 py-8'>
+              {previewBytes ? (
+                <PdfViewer pdfBytes={previewBytes} />
+              ) : (
+                <div className='rounded-xl bg-muted flex items-center justify-center min-h-120'>
+                  <p className='text-sm text-muted-foreground'>No document loaded.</p>
+                </div>
+              )}
+            </div>
           </div>
+          {cloakStats && (
+            <p className='pointer-events-none absolute bottom-4 left-5 text-xs text-muted-foreground tabular-nums'>
+              Cloaked {cloakStats.pages} {cloakStats.pages === 1 ? 'page' : 'pages'} in {cloakStats.seconds.toFixed(1)} seconds
+            </p>
+          )}
         </div>
 
         <div className='shrink-0 border-t px-4 pt-5 pb-6'>

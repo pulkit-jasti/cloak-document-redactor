@@ -22,7 +22,7 @@ const OVERLAY_EXIT_MS = 450
 
 export default function UploadPanel() {
   const navigate = useNavigate()
-  const { setPdf, setEntities, setRedactedBytes } = useCloak()
+  const { setPdf, setEntities, setRedactedBytes, setCloakStats } = useCloak()
   const { status, selectedModel } = useOllama()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [progress, setProgress] = useState<CloakProgress | null>(null)
@@ -90,14 +90,15 @@ export default function UploadPanel() {
       const redacted = await redactPdf(bytes, approvedEntities, signal)
       signal.throwIfAborted()
 
+      const seconds = (performance.now() - startedAt) / 1000
       if (IS_DEV) {
-        const seconds = ((performance.now() - startedAt) / 1000).toFixed(1)
-        console.log(`[Cloak] Cloaked in ${seconds}s | model: ${modelUsed} | pages: ${pageTexts.length}`)
+        console.log(`[Cloak] Cloaked in ${seconds.toFixed(1)}s | model: ${modelUsed} | pages: ${pageTexts.length}`)
       }
 
       setPdf(url, bytes, selectedFile.name)
       setEntities(redactions)
       setRedactedBytes(redacted)
+      setCloakStats({ seconds, pages: pageTexts.length })
       navigate("/preview")
     } catch (err) {
       URL.revokeObjectURL(url)
