@@ -14,6 +14,8 @@ const REGEX_PATTERNS: Array<{ type: string; pattern: RegExp }> = [
   { type: "SSN", pattern: /\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/g },
 ]
 
+const REGEX_ENABLED = import.meta.env.VITE_REGEX_ENABLED !== "false"
+
 const CHUNK_WORDS = 200
 const OVERLAP_WORDS = 30
 
@@ -42,7 +44,12 @@ async function runNer(text: string) {
   return NERPipeline.run(chunks)
 }
 
+export function valueKey(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toLowerCase()
+}
+
 export function extractRegexEntities(text: string): Array<{ type: string; value: string }> {
+  if (!REGEX_ENABLED) return []
   const results: Array<{ type: string; value: string }> = []
   for (const { type, pattern } of REGEX_PATTERNS) {
     for (const match of text.matchAll(new RegExp(pattern.source, "g"))) {
@@ -118,6 +125,13 @@ export async function detectPii(pageTexts: string[], options: DetectPiiOptions =
     const pageNum = pageIdx + 1
     const text = pageTexts[pageIdx]
 
+    for (const { type, value } of extractRegexEntities(text)) {
+      const key = valueKey(value)
+      if (seen.has(key)) continue
+      seen.add(key)
+      redactions.push({ id: crypto.randomUUID(), type, value, page: pageNum, approved: true })
+    }
+
     const nerResults = await runNer(text)
     for (const r of nerResults) {
       const group = r.entity_group
@@ -125,18 +139,12 @@ export async function detectPii(pageTexts: string[], options: DetectPiiOptions =
       const value = r.word.trim()
       if (!value || value.startsWith("##") || value.length < 3) continue
       if (/^(email|phone|ssn|name|address|company|location|manager|fax|date|id)$/i.test(value)) continue
-      const key = `${group}:${value.toLowerCase()}`
+      const key = valueKey(value)
       if (seen.has(key)) continue
       seen.add(key)
       redactions.push({ id: crypto.randomUUID(), type: ENTITY_LABELS[group] ?? group, value, page: pageNum, approved: true })
     }
 
-    for (const { type, value } of extractRegexEntities(text)) {
-      const key = `${type}:${value.toLowerCase()}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      redactions.push({ id: crypto.randomUUID(), type, value, page: pageNum, approved: true })
-    }
   }
 
   return redactions

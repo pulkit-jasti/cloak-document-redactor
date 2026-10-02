@@ -23,12 +23,15 @@ export interface RunResult {
     duration_ms: number
   }
   model: { id: string }
+  regex_enabled?: boolean
   timestamp: string
   pdfs: PdfResult[]
 }
 
 
-export function writeResults(data: RunResult): void {
+export function writeResults(result: RunResult): void {
+  const regexEnabled = process.env.VITE_REGEX_ENABLED !== 'false'
+  const data: RunResult = { ...result, regex_enabled: regexEnabled }
   const resultsDir = path.resolve(__dirname, '../../results')
   const runsDir = path.join(resultsDir, 'runs')
 
@@ -38,7 +41,7 @@ export function writeResults(data: RunResult): void {
   fs.mkdirSync(runsDir, { recursive: true })
   const modelSlug = data.model.id.replace(/[^a-zA-Z0-9]/g, '-')
   const ts = data.timestamp.replace(/[:.]/g, '-').replace('T', 'T').slice(0, 19)
-  const filename = `${ts}_${modelSlug}.json`
+  const filename = `${ts}_${modelSlug}${regexEnabled ? '' : '_no-regex'}.json`
   fs.writeFileSync(path.join(runsDir, filename), JSON.stringify(data, null, 2))
 }
 
