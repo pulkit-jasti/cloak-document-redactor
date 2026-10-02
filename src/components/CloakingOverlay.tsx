@@ -99,13 +99,13 @@ export default function CloakingOverlay({ progress, closing = false, onCancel }:
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={percent ?? undefined}
-          className="mt-5 h-1 w-full max-w-60 overflow-hidden rounded-full bg-muted"
+          className="mt-6 h-2.5 w-full max-w-64 overflow-hidden bg-muted"
         >
           {percent === null ? (
-            <div className="loader-indeterminate h-full w-1/3 rounded-full bg-foreground" />
+            <div className="loader-indeterminate h-full w-1/3 bg-foreground" />
           ) : (
             <div
-              className="h-full rounded-full bg-foreground transition-[width] duration-500 ease-out"
+              className="h-full bg-foreground transition-[width] duration-500 ease-out"
               style={{ width: `${percent}%` }}
             />
           )}

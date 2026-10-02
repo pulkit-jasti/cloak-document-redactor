@@ -1,12 +1,19 @@
 import { useNavigate } from 'react-router-dom'
+import { Download, PenLine, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import CtaButton from '@/components/CtaButton'
 import Navbar from '@/components/Navbar'
 import PdfViewer from '@/components/PdfViewer'
 import { useCloak } from '@/context/CloakContext'
 
+function redactedFileName(original: string | null) {
+  const base = original?.replace(/\.pdf$/i, '').trim() || 'document'
+  return `${base}_redacted.pdf`
+}
+
 export default function PreviewPage() {
   const navigate = useNavigate()
-  const { pdfBytes, redactedBytes, entities } = useCloak()
+  const { pdfBytes, fileName, redactedBytes, entities, reset } = useCloak()
 
   const handleDownload = () => {
     const bytes = redactedBytes
@@ -15,9 +22,14 @@ export default function PreviewPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'redacted.pdf'
+    a.download = redactedFileName(fileName)
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleStartOver = () => {
+    reset()
+    navigate('/')
   }
 
   const previewBytes = redactedBytes ?? pdfBytes
@@ -39,26 +51,39 @@ export default function PreviewPage() {
           </div>
         </div>
 
-        <div className='shrink-0 border-t px-4 py-4'>
-          <div className='max-w-2xl mx-auto flex flex-col gap-3'>
+        <div className='shrink-0 border-t px-4 pt-5 pb-6'>
+          <div className='max-w-2xl mx-auto flex flex-col gap-4'>
             {entities?.length === 0 && (
               <p className='text-xs text-muted-foreground text-center'>
-                No PII detected. Document appears clean.
+                Nothing personal found. This document looks clean.
               </p>
             )}
-            <Button
-              size='lg'
-              className='w-full'
-              onClick={handleDownload}
-              disabled={!redactedBytes}
-            >
-              Download PDF
-            </Button>
+            <div className='flex gap-3'>
+              <Button
+                variant='outline'
+                size='lg'
+                className='h-12 flex-1 gap-2'
+                onClick={() => navigate('/edit')}
+              >
+                <PenLine className='size-4' aria-hidden />
+                Edit redactions
+              </Button>
+              <CtaButton
+                fullWidth
+                wrapperClassName='flex-[1.4]'
+                onClick={handleDownload}
+                disabled={!redactedBytes}
+              >
+                <Download className='size-4.5' aria-hidden />
+                Download PDF
+              </CtaButton>
+            </div>
             <button
-              onClick={() => navigate('/edit')}
-              className='text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground text-center'
+              onClick={handleStartOver}
+              className='mx-auto flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors'
             >
-              Edit redactions
+              <RotateCcw className='size-3.5' aria-hidden />
+              Redact another PDF
             </button>
           </div>
         </div>

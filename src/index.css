@@ -127,6 +127,10 @@
   html {
     @apply font-sans;
     }
+  ::selection {
+    background: var(--foreground);
+    color: var(--background);
+  }
   button, [role="button"], a, label[for], select {
     cursor: pointer;
     }

@@ -10,10 +10,11 @@ import { useOllama } from "@/context/OllamaContext"
 import { extractPdfTextPerPage, detectPii, type CloakProgress } from "@/lib/pdfPipeline"
 import { redactPdf } from "@/lib/redactPdf"
 import { hasAnyText } from "@/lib/pageStats"
-import CtaButton from "./CtaButton"
+import CtaButton from "@/components/CtaButton"
 import DropZone from "./DropZone"
 import FilePreview from "./FilePreview"
 import NoTextModal from "./NoTextModal"
+import PipelineErrorModal from "./PipelineErrorModal"
 import OllamaIcon from "@/assets/ollama.svg?react"
 
 const IS_DEV = import.meta.env.VITE_ENV === "development"
@@ -30,6 +31,7 @@ export default function UploadPanel() {
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false)
   const [connectOllamaOpen, setConnectOllamaOpen] = useState(false)
   const [noTextOpen, setNoTextOpen] = useState(false)
+  const [errorOpen, setErrorOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const ollamaConnected = status === "available"
@@ -40,6 +42,15 @@ export default function UploadPanel() {
   }
 
   const openPicker = () => fileInputRef.current?.click()
+
+  const closeOverlay = (then?: () => void) => {
+    setIsClosingOverlay(true)
+    setTimeout(() => {
+      setProgress(null)
+      setIsClosingOverlay(false)
+      then?.()
+    }, OVERLAY_EXIT_MS)
+  }
 
   const handleCloak = async () => {
     if (!selectedFile) return
@@ -63,8 +74,7 @@ export default function UploadPanel() {
       const { pageTexts, pageStats } = await extractPdfTextPerPage(bytes, signal)
       if (!hasAnyText(pageStats)) {
         URL.revokeObjectURL(url)
-        setProgress(null)
-        setNoTextOpen(true)
+        closeOverlay(() => setNoTextOpen(true))
         return
       }
 
@@ -85,25 +95,21 @@ export default function UploadPanel() {
         console.log(`[Cloak] Cloaked in ${seconds}s | model: ${modelUsed} | pages: ${pageTexts.length}`)
       }
 
-      setPdf(url, bytes)
+      setPdf(url, bytes, selectedFile.name)
       setEntities(redactions)
       setRedactedBytes(redacted)
       navigate("/preview")
     } catch (err) {
       URL.revokeObjectURL(url)
       if (signal.aborted) return
-      setProgress(null)
       console.error("[Cloak] pipeline error:", err)
+      closeOverlay(() => setErrorOpen(true))
     }
   }
 
   const handleCancel = () => {
     abortRef.current?.abort()
-    setIsClosingOverlay(true)
-    setTimeout(() => {
-      setProgress(null)
-      setIsClosingOverlay(false)
-    }, OVERLAY_EXIT_MS)
+    closeOverlay()
   }
 
   return (
@@ -179,6 +185,11 @@ export default function UploadPanel() {
         <NoTextModal
           open={noTextOpen}
           onClose={() => { setNoTextOpen(false); setSelectedFile(null) }}
+        />
+        <PipelineErrorModal
+          open={errorOpen}
+          onRetry={() => { setErrorOpen(false); handleCloak() }}
+          onClose={() => { setErrorOpen(false); setSelectedFile(null) }}
         />
         <ModelSelectorModal open={modelSelectorOpen} onClose={() => setModelSelectorOpen(false)} />
         <ConnectOllamaModal

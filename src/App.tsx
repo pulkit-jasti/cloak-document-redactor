@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CloakProvider } from '@/context/CloakContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -23,6 +23,14 @@ function RequirePdf({ children }: { children: React.ReactNode }) {
 	const { pdfUrl } = useCloak();
 	if (!pdfUrl) return <Navigate to='/' replace />;
 	return <>{children}</>;
+}
+
+function UnknownRoute() {
+	const { reset } = useCloak();
+	useEffect(() => {
+		reset();
+	}, [reset]);
+	return <Navigate to='/' replace />;
 }
 
 export default function App() {
@@ -57,6 +65,7 @@ export default function App() {
 						<Route path='/' element={<UploadPage />} />
 						<Route path='/preview' element={<RequirePdf><PreviewPage /></RequirePdf>} />
 						<Route path='/edit' element={<RequirePdf><EditPage /></RequirePdf>} />
+						<Route path='*' element={<UnknownRoute />} />
 					</Routes>
 				</CloakProvider>
 			</BrowserRouter>

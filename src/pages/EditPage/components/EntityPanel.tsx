@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import CtaButton from '@/components/CtaButton'
 import type { MatchSummary } from '@/components/PdfViewer'
 import type { EntityGroup } from '../groupRedactions'
 import EntityCard from './EntityCard'
@@ -38,10 +38,10 @@ export default function EntityPanel({ groups, matches, matchesComplete, onToggle
         )}
       </div>
 
-      <div className='shrink-0 p-4 border-t'>
-        <Button className='w-full' onClick={onSave} disabled={isSaving}>
+      <div className='shrink-0 border-t px-4 pt-4 pb-7'>
+        <CtaButton fullWidth onClick={onSave} disabled={isSaving}>
           {isSaving ? 'Applying changes…' : 'Apply changes'}
-        </Button>
+        </CtaButton>
       </div>
     </div>
   )
