@@ -1,5 +1,9 @@
 import NERPipeline, { ModelStatus } from "@/lib/nerPipeline"
 import type { PageStats, Redaction } from "@/types"
+import { findPhoneNumbersInText } from "libphonenumber-js"
+import isEmail from "validator/es/lib/isEmail"
+import isCreditCard from "validator/es/lib/isCreditCard"
+import isIBAN from "validator/es/lib/isIBAN"
 
 export const ENTITY_LABELS: Record<string, string> = {
   PER: "Person",
@@ -8,11 +12,46 @@ export const ENTITY_LABELS: Record<string, string> = {
   MISC: "Miscellaneous",
 }
 
-const REGEX_PATTERNS: Array<{ type: string; pattern: RegExp }> = [
-  { type: "Email", pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g },
-  { type: "Phone", pattern: /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g },
-  { type: "SSN", pattern: /\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/g },
+type Span = [number, number]
+
+type PiiDetector = {
+  type: string
+  find: (text: string) => Span[]
+}
+
+function matchAndValidate(pattern: RegExp, isValid: (match: string) => boolean) {
+  return (text: string): Span[] =>
+    [...text.matchAll(pattern)].filter((m) => isValid(m[0])).map((m) => [m.index, m.index + m[0].length])
+}
+
+const PII_DETECTORS: PiiDetector[] = [
+  {
+    type: "Email",
+    find: matchAndValidate(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, (m) => isEmail(m)),
+  },
+  {
+    type: "Phone",
+    find: (text) => findPhoneNumbersInText(text, "US").map((m) => [m.startsAt, m.endsAt]),
+  },
+  {
+    type: "Credit Card",
+    find: matchAndValidate(/\b(?:\d[ -]?){12,18}\d\b/g, (m) => isCreditCard(m.replace(/[ -]/g, ""))),
+  },
+  {
+    type: "IBAN",
+    find: matchAndValidate(/\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,4})?\b/g, (m) => isIBAN(m.replace(/ /g, ""))),
+  },
+  {
+    type: "SSN",
+    find: matchAndValidate(/\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/g, isValidSsn),
+  },
 ]
+
+function isValidSsn(match: string): boolean {
+  const digits = match.replace(/\D/g, "")
+  const area = digits.slice(0, 3)
+  return area !== "000" && area !== "666" && area[0] !== "9" && digits.slice(3, 5) !== "00" && digits.slice(5) !== "0000"
+}
 
 const REGEX_ENABLED = import.meta.env.VITE_REGEX_ENABLED !== "false"
 
@@ -51,10 +90,12 @@ export function valueKey(value: string): string {
 export function extractRegexEntities(text: string): Array<{ type: string; value: string }> {
   if (!REGEX_ENABLED) return []
   const results: Array<{ type: string; value: string }> = []
-  for (const { type, pattern } of REGEX_PATTERNS) {
-    for (const match of text.matchAll(new RegExp(pattern.source, "g"))) {
-      const value = match[0].trim()
-      if (value) results.push({ type, value })
+  const taken: Span[] = []
+  for (const { type, find } of PII_DETECTORS) {
+    for (const [start, end] of find(text)) {
+      if (taken.some(([s, e]) => start < e && end > s)) continue
+      taken.push([start, end])
+      results.push({ type, value: text.slice(start, end).trim() })
     }
   }
   return results
