@@ -6,10 +6,10 @@ import type { EntityGroup } from '../groupRedactions'
 interface Props {
   group: EntityGroup
   match: { pages: number[]; count: number }
-  onToggle: (key: string) => void
+  onSetApproved: (keys: string[], approved: boolean) => void
 }
 
-export default function EntityCard({ group: g, match, onToggle }: Props) {
+export default function EntityCard({ group: g, match, onSetApproved }: Props) {
   const checkboxId = useId()
 
   return (
@@ -18,7 +18,6 @@ export default function EntityCard({ group: g, match, onToggle }: Props) {
       className='flex cursor-pointer items-stretch gap-3 rounded-lg border px-3 py-2.5 bg-card transition-colors hover:bg-muted/40'
     >
       <div className={`flex-1 min-w-0 transition-opacity ${g.approved ? '' : 'opacity-50'}`}>
-        <span className='text-xs text-muted-foreground'>{g.type}</span>
         <p className='text-sm font-medium truncate'>{g.value}</p>
         <div className='mt-1.5 flex flex-wrap items-center gap-1'>
           <span className='mr-0.5 text-xs text-muted-foreground'>
@@ -38,7 +37,7 @@ export default function EntityCard({ group: g, match, onToggle }: Props) {
             id={checkboxId}
             className='rounded-[4px]'
             checked={g.approved}
-            onCheckedChange={() => onToggle(g.key)}
+            onCheckedChange={(c) => onSetApproved([g.key], c === true)}
           />
         </span>
         <Badge variant='secondary' className='h-5 px-2 tabular-nums'>

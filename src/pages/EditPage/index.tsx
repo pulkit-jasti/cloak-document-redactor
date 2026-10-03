@@ -31,10 +31,10 @@ export default function EditPage() {
 		[],
 	);
 
-	const toggleGroup = (key: string) => {
-		const target = !groups.find((g) => g.key === key)?.approved;
+	const setApproved = (keys: string[], approved: boolean) => {
+		const set = new Set(keys);
 		setRedactions((prev) =>
-			prev.map((r) => (groupKey(r.value) === key ? { ...r, approved: target } : r)),
+			prev.map((r) => (set.has(groupKey(r.value)) ? { ...r, approved } : r)),
 		);
 	};
 
@@ -84,7 +84,7 @@ export default function EditPage() {
 					groups={groups}
 					matches={matches.summary}
 					matchesComplete={matches.complete}
-					onToggle={toggleGroup}
+					onSetApproved={setApproved}
 					onSave={handleSave}
 					isSaving={isSaving}
 				/>
