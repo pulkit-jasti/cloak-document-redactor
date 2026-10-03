@@ -12,7 +12,7 @@ export type ProgressEvent = {
 	total?: boolean;
 };
 
-const IS_DEV = import.meta.env.VITE_ENV === 'development';
+const IS_DEV = import.meta.env.DEV;
 
 type Props = {
 	status: ModelStatus;

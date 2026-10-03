@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, useSyncExternalStore } from 'react'
 import NERPipeline, { ModelStatus } from '@/lib/nerPipeline'
-import { DEFAULT_NER_MODEL_ID, NER_MODELS, getNerModel, getSavedNerModelId, saveNerModelId } from '@/lib/nerModels'
+import { DEFAULT_NER_MODEL_ID, NER_MODELS, getSavedNerModelId, saveNerModelId } from '@/lib/nerModels'
 
 export type NerDownloadState =
   | { status: 'checking' }
@@ -13,7 +13,6 @@ interface NerModelContextValue {
   selectedId: string
   setSelectedId: (id: string) => void
   states: Record<string, NerDownloadState>
-  webgpu: boolean | null
   download: (id: string) => void
   remove: (id: string) => Promise<void>
 }
@@ -35,7 +34,6 @@ const initialStates = (): Record<string, NerDownloadState> =>
 export function NerModelProvider({ children }: { children: React.ReactNode }) {
   const selectedId = useSyncExternalStore(subscribeSelection, getSavedNerModelId, () => DEFAULT_NER_MODEL_ID)
   const [states, setStates] = useState(initialStates)
-  const [webgpu, setWebgpu] = useState<boolean | null>(null)
 
   const setState = useCallback((id: string, state: NerDownloadState) => {
     setStates((prev) => ({ ...prev, [id]: state }))
@@ -68,15 +66,6 @@ export function NerModelProvider({ children }: { children: React.ReactNode }) {
     for (const listener of selectionListeners) listener()
   }, [])
 
-  useEffect(() => {
-    const detect = async () => {
-      const adapter = await navigator.gpu?.requestAdapter().catch(() => null)
-      setWebgpu(!!adapter)
-      if (!adapter && getNerModel(getSavedNerModelId()).device === 'webgpu') setSelectedId(DEFAULT_NER_MODEL_ID)
-    }
-    void detect()
-  }, [setSelectedId])
-
   const download = useCallback((id: string) => {
     setState(id, { status: 'downloading', progress: 0 })
     NERPipeline.getInstance(id).catch((err) => console.error(`[Cloak] failed to download ${id}:`, err))
@@ -95,7 +84,7 @@ export function NerModelProvider({ children }: { children: React.ReactNode }) {
   }, [setState])
 
   return (
-    <NerModelContext.Provider value={{ selectedId, setSelectedId, states, webgpu, download, remove }}>
+    <NerModelContext.Provider value={{ selectedId, setSelectedId, states, download, remove }}>
       {children}
     </NerModelContext.Provider>
   )

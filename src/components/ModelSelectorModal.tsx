@@ -22,7 +22,6 @@ function ModelRow({
   subtitle,
   badge,
   selected,
-  disabled,
   onClick,
   action,
 }: {
@@ -30,21 +29,16 @@ function ModelRow({
   subtitle: string
   badge?: string
   selected: boolean
-  disabled?: boolean
   onClick: () => void
   action?: React.ReactNode
 }) {
   return (
     <div
       className={`flex items-center gap-2 rounded-lg pr-2 transition-colors ${
-        disabled ? 'opacity-50 text-foreground' : selected ? 'bg-primary/10 text-foreground' : 'hover:bg-muted text-foreground'
+        selected ? 'bg-primary/10 text-foreground' : 'hover:bg-muted text-foreground'
       }`}
     >
-      <button
-        onClick={onClick}
-        disabled={disabled}
-        className="flex flex-1 items-center justify-between gap-3 px-3 py-3 text-left min-w-0 disabled:cursor-not-allowed"
-      >
+      <button onClick={onClick} className="flex flex-1 items-center justify-between gap-3 px-3 py-3 text-left min-w-0">
         <div className="flex flex-col gap-0.5 min-w-0">
           <span className="flex items-center gap-2 text-sm font-medium">
             <span className="truncate">{name}</span>
@@ -107,9 +101,7 @@ interface ModelSelectorModalProps {
 
 export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
   const { status, models, selectedModel, setSelectedModel } = useOllama()
-  const { selectedId, setSelectedId, states, webgpu, download, remove } = useNerModel()
-
-  const unsupported = (m: NerModel) => m.device === 'webgpu' && webgpu === false
+  const { selectedId, setSelectedId, states, download, remove } = useNerModel()
 
   const handleSelectNer = (id: string) => {
     setSelectedModel(null)
@@ -130,7 +122,6 @@ export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
   }
 
   const nerSubtitle = (m: NerModel) => {
-    if (unsupported(m)) return 'Needs WebGPU, try Chrome or Edge'
     const state = states[m.id]
     const where = state?.status === 'ready' ? 'downloaded' : 'runs in browser'
     return `${m.summary} · ${m.size} · ${where}`
@@ -148,10 +139,9 @@ export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
               subtitle={nerSubtitle(m)}
               badge={m.badge}
               selected={selectedModel === null && selectedId === m.id}
-              disabled={unsupported(m)}
               onClick={() => handleSelectNer(m.id)}
               action={
-                !unsupported(m) && <NerModelAction
+                <NerModelAction
                   model={m}
                   state={states[m.id] ?? { status: 'checking' }}
                   onDownload={() => download(m.id)}

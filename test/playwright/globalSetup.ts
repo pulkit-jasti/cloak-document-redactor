@@ -8,6 +8,11 @@ function checkServer(url: string): Promise<boolean> {
 }
 
 export default async function globalSetup() {
+  if (process.env.VITE_MODEL_ENABLED === 'false' && process.env.VITE_REGEX_ENABLED === 'false') {
+    console.error('VITE_MODEL_ENABLED and VITE_REGEX_ENABLED are both false. Enable at least one.')
+    process.exit(1)
+  }
+
   const isOllama = isOllamaTest()
 
   const checks: Promise<boolean>[] = [

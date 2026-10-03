@@ -3,7 +3,7 @@ import { Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { CloakProgress } from "@/lib/pdfPipeline"
 
-const IS_DEV = import.meta.env.VITE_ENV === "development"
+const IS_DEV = import.meta.env.DEV
 
 const FLAMES = [
   { color: "#9e7aff", left: "-4%", duration: "8s", delay: "0s" },

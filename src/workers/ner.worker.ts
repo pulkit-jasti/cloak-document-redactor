@@ -7,12 +7,11 @@ import {
 } from '@huggingface/transformers'
 import { NER_TASK, getNerModel, nerLoadOptions } from '@/lib/nerModels'
 import { isOpfsAvailable, opfsCache } from './opfsCache'
-import { runViterbi } from './viterbi'
 
-const MODEL_BASE_URL = import.meta.env.VITE_MODEL_BASE_URL as string
-const IS_DEV = import.meta.env.VITE_ENV === 'development'
+const MODEL_BASE_URL = (import.meta.env.VITE_MODEL_BASE_URL as string | undefined)?.trim()
+const USE_LOCAL_MODELS = !!MODEL_BASE_URL
 
-if (IS_DEV) {
+if (USE_LOCAL_MODELS) {
   env.remoteHost = MODEL_BASE_URL
   env.remotePathTemplate = '{model}/'
   env.allowLocalModels = false
@@ -35,7 +34,7 @@ export type NerEntity = { entity_group?: string; word: string }
 const pipes = new Map<string, Promise<TokenClassificationPipeline>>()
 
 function modelPath(modelId: string) {
-  return IS_DEV ? modelId : getNerModel(modelId).repo
+  return USE_LOCAL_MODELS ? modelId : getNerModel(modelId).repo
 }
 
 function logDevInfo(modelId: string) {
@@ -55,7 +54,7 @@ function loadPipeline(modelId: string) {
 
   pipePromise.then(
     () => {
-      if (IS_DEV) logDevInfo(modelId)
+      if (import.meta.env.DEV) logDevInfo(modelId)
       self.postMessage({ type: 'ready', modelId })
     },
     (err) => {
@@ -83,12 +82,7 @@ async function runNer(modelId: string, chunks: string[]) {
   const pipe = await loadPipeline(modelId)
   await unloadOthers(modelId)
   const results: NerEntity[] = []
-  const viterbi = getNerModel(modelId).decoder === 'viterbi'
   for (const chunk of chunks) {
-    if (viterbi) {
-      results.push(...(await runViterbi(pipe, chunk)))
-      continue
-    }
     const output = await pipe(chunk, { aggregation_strategy: 'simple' })
     for (const r of Array.from(output as ArrayLike<(typeof output)[number]>)) {
       results.push({ entity_group: 'entity_group' in r ? r.entity_group : undefined, word: r.word })

@@ -44,10 +44,11 @@ export function writeResults(result: RunResult): void {
   fs.mkdirSync(runsDir, { recursive: true })
   const modelSlug = data.model.id.replace(/[^a-zA-Z0-9]/g, '-')
   const ts = data.timestamp.replace(/[:.]/g, '-').replace('T', 'T').slice(0, 19)
-  const filename = `${ts}_${modelSlug}${regexEnabled ? '' : '_no-regex'}${modelEnabled ? '' : '_no-model'}.json`
+  const filename = `${ts}_${modelSlug}${modelEnabled && !regexEnabled ? '_no-regex' : ''}.json`
   fs.writeFileSync(path.join(runsDir, filename), JSON.stringify(data, null, 2))
 }
 
 export function readModelId(): string {
+  if (process.env.VITE_MODEL_ENABLED === 'false') return 'regex-only'
   return testModel()
 }

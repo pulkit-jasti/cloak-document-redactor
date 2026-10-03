@@ -19,7 +19,7 @@ import NoTextModal from "./NoTextModal"
 import PipelineErrorModal from "./PipelineErrorModal"
 import OllamaIcon from "@/assets/ollama.svg?react"
 
-const IS_DEV = import.meta.env.VITE_ENV === "development"
+const IS_DEV = import.meta.env.DEV
 const OVERLAY_EXIT_MS = 450
 
 export default function UploadPanel() {

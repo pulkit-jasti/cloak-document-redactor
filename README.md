@@ -99,19 +99,18 @@ cp .env.example .env.local
 Then fill in `.env.local`:
 
 ```
-VITE_ENV=development
 VITE_MODEL_BASE_URL=http://localhost:8080
-VITE_MODEL_ID=bert-base-ner
 VITE_REGEX_ENABLED=true
+VITE_MODEL_ENABLED=true
+VITE_MODEL=
 ```
 
 | Variable              | Purpose                                                                                                   |
 | --------------------- | --------------------------------------------------------------------------------------------------------- |
-| `VITE_ENV`            | `development` loads the model from `VITE_MODEL_BASE_URL` and enables dev tools (see below).               |
-| `VITE_MODEL_BASE_URL` | Local model file server (step 4). Only used in development.                                               |
-| `VITE_MODEL_ID`       | In development, the folder name under `./models/`. In production, the Hugging Face model id.              |
+| `VITE_MODEL_BASE_URL` | Local model file server (step 4). When set, models load from here. When empty, they load from Hugging Face. |
 | `VITE_REGEX_ENABLED`  | Set to `false` to turn off regex detection (emails, phones, SSNs). Defaults to on.                        |
-| `VITE_MODEL`          | Optional. `ollama:<model>` preselects an Ollama model; also used by the Playwright tests.                  |
+| `VITE_MODEL_ENABLED`  | Set to `false` to turn off model detection (built-in NER and Ollama) so only regex runs. Defaults to on.  |
+| `VITE_MODEL`          | Playwright tests only. `pii-redactor-small` (default), `bert-base-ner`, or `ollama:<model>`. Not read by the app. |
 
 ### 3. Download the model
 
@@ -154,7 +153,7 @@ OLLAMA_ORIGINS=http://localhost:5173 ollama serve
 
 Then use **Connect Ollama** on the landing page and pick a model in the model selector. The app shows the exact command for your OS.
 
-### Dev-only tools (`VITE_ENV=development`)
+### Dev-only tools (`npm run dev`)
 
 - A "Load model" pill in the corner that preloads the NER model and shows download progress.
 - A stopwatch on the loading screen.

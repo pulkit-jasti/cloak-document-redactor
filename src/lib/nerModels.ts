@@ -5,9 +5,8 @@ export type NerModel = {
   summary: string
   size: string
   badge?: string
-  device: 'wasm' | 'webgpu'
-  dtype: 'q8' | 'q4'
-  decoder?: 'viterbi'
+  device: 'wasm'
+  dtype: 'q8'
 }
 
 export const NER_MODELS: NerModel[] = [
@@ -20,17 +19,6 @@ export const NER_MODELS: NerModel[] = [
     badge: 'Recommended',
     device: 'wasm',
     dtype: 'q8',
-  },
-  {
-    id: 'privacy-filter',
-    repo: 'openai/privacy-filter',
-    name: 'Privacy Filter',
-    summary: 'Most accurate, needs WebGPU',
-    size: '~945 MB',
-    badge: 'Max',
-    device: 'webgpu',
-    dtype: 'q4',
-    decoder: 'viterbi',
   },
   {
     id: 'bert-base-ner',

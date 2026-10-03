@@ -40,14 +40,6 @@ export const ENTITY_LABELS: Record<string, string> = {
   IP_ADDRESS: "IP Address",
   MAC_ADDRESS: "MAC Address",
   DEVICE_ID: "Device ID",
-  private_person: "Person",
-  private_address: "Address",
-  private_email: "Email",
-  private_phone: "Phone",
-  private_url: "URL",
-  private_date: "Date",
-  account_number: "Account Number",
-  secret: "Secret",
 }
 
 type Span = [number, number]
