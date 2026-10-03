@@ -7,6 +7,8 @@ import { ModelSelectorTrigger, ModelSelectorModal } from "@/components/ModelSele
 import { ConnectOllamaModal } from "@/components/ConnectOllamaModal"
 import { useCloak } from "@/context/CloakContext"
 import { useOllama } from "@/context/OllamaContext"
+import { useNerModel } from "@/context/NerModelContext"
+import { getNerModel } from "@/lib/nerModels"
 import { extractPdfTextPerPage, detectPii, type CloakProgress } from "@/lib/pdfPipeline"
 import { redactPdf } from "@/lib/redactPdf"
 import { hasAnyText } from "@/lib/pageStats"
@@ -24,6 +26,7 @@ export default function UploadPanel() {
   const navigate = useNavigate()
   const { setPdf, setEntities, setRedactedBytes, setCloakStats } = useCloak()
   const { status, selectedModel } = useOllama()
+  const { selectedId: nerModelId } = useNerModel()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [progress, setProgress] = useState<CloakProgress | null>(null)
   const [isClosingOverlay, setIsClosingOverlay] = useState(false)
@@ -58,10 +61,11 @@ export default function UploadPanel() {
     abortRef.current = controller
     const { signal } = controller
     const startedAt = performance.now()
-    let modelUsed = selectedModel ?? "BERT (built-in)"
+    const nerModelName = getNerModel(nerModelId).name
+    let modelUsed = selectedModel ?? nerModelName
     const report = (next: CloakProgress) => {
       if (next.stage === "scanning" && !next.parallel && selectedModel) {
-        modelUsed = `BERT (built-in), fallback from ${selectedModel}`
+        modelUsed = `${nerModelName}, fallback from ${selectedModel}`
       }
       if (!signal.aborted) setProgress(next)
     }
@@ -79,7 +83,8 @@ export default function UploadPanel() {
       }
 
       const redactions = await detectPii(pageTexts, {
-        mode: selectedModel ? "ollama" : "bert",
+        mode: selectedModel ? "ollama" : "ner",
+        nerModel: nerModelId,
         ollamaModel: selectedModel ?? undefined,
         signal,
         onProgress: report,

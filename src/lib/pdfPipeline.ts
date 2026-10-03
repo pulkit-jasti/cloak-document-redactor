@@ -1,4 +1,5 @@
 import NERPipeline, { ModelStatus } from "@/lib/nerPipeline"
+import { DEFAULT_NER_MODEL_ID } from "@/lib/nerModels"
 import type { PageStats, Redaction } from "@/types"
 import { findPhoneNumbersInText } from "libphonenumber-js"
 import isEmail from "validator/es/lib/isEmail"
@@ -10,6 +11,43 @@ export const ENTITY_LABELS: Record<string, string> = {
   ORG: "Organization",
   LOC: "Location",
   MISC: "Miscellaneous",
+  PERSON: "Person",
+  ORGANIZATION: "Organization",
+  LOCATION: "Location",
+  STREET_ADDRESS: "Address",
+  POSTCODE: "Postcode",
+  COORDINATE: "Coordinates",
+  EMAIL: "Email",
+  PHONE: "Phone",
+  URL: "URL",
+  USERNAME: "Username",
+  PASSWORD: "Password",
+  SECRET: "Secret",
+  DATE: "Date",
+  DATE_OF_BIRTH: "Date of Birth",
+  AGE: "Age",
+  NATIONAL_ID: "National ID",
+  TAX_ID: "Tax ID",
+  PASSPORT: "Passport",
+  DRIVER_LICENSE: "Driver License",
+  LICENSE_NUMBER: "License Number",
+  MEDICAL_ID: "Medical ID",
+  VEHICLE_ID: "Vehicle ID",
+  ACCOUNT_ID: "Account ID",
+  BANK_ACCOUNT: "Bank Account",
+  CREDIT_CARD: "Credit Card",
+  CREDIT_CARD_CVV: "Card CVV",
+  IP_ADDRESS: "IP Address",
+  MAC_ADDRESS: "MAC Address",
+  DEVICE_ID: "Device ID",
+  private_person: "Person",
+  private_address: "Address",
+  private_email: "Email",
+  private_phone: "Phone",
+  private_url: "URL",
+  private_date: "Date",
+  account_number: "Account Number",
+  secret: "Secret",
 }
 
 type Span = [number, number]
@@ -54,6 +92,7 @@ function isValidSsn(match: string): boolean {
 }
 
 const REGEX_ENABLED = import.meta.env.VITE_REGEX_ENABLED !== "false"
+const MODEL_ENABLED = import.meta.env.VITE_MODEL_ENABLED !== "false"
 
 const CHUNK_WORDS = 200
 const OVERLAP_WORDS = 30
@@ -72,7 +111,7 @@ function cleanTextForNer(text: string): string {
     .join("\n")
 }
 
-async function runNer(text: string) {
+async function runNer(modelId: string, text: string) {
   const cleaned = cleanTextForNer(text)
   const words = cleaned.split(/\s+/).filter(Boolean)
   const chunks: string[] = []
@@ -80,7 +119,7 @@ async function runNer(text: string) {
     chunks.push(words.slice(i, i + CHUNK_WORDS).join(" "))
     if (i + CHUNK_WORDS >= words.length) break
   }
-  return NERPipeline.run(chunks)
+  return NERPipeline.run(modelId, chunks)
 }
 
 export function valueKey(value: string): string {
@@ -133,30 +172,33 @@ export async function extractPdfTextPerPage(bytes: Uint8Array, signal?: AbortSig
 }
 
 export interface DetectPiiOptions {
-  mode?: 'bert' | 'ollama'
+  mode?: 'ner' | 'ollama'
+  nerModel?: string
   ollamaModel?: string
   signal?: AbortSignal
   onProgress?: (progress: CloakProgress) => void
 }
 
 export async function detectPii(pageTexts: string[], options: DetectPiiOptions = {}): Promise<Redaction[]> {
-  const { mode = 'bert', ollamaModel, signal, onProgress } = options
+  const { mode = 'ner', nerModel = DEFAULT_NER_MODEL_ID, ollamaModel, signal, onProgress } = options
 
-  if (mode === 'ollama' && ollamaModel) {
+  if (MODEL_ENABLED && mode === 'ollama' && ollamaModel) {
     const { detectPiiWithOllama } = await import('@/lib/ollamaClient')
     try {
       return await detectPiiWithOllama(pageTexts, ollamaModel, { signal, onProgress })
     } catch (err) {
       if (signal?.aborted) throw err
-      console.warn('[Cloak] Ollama failed, falling back to BERT:', err)
+      console.warn('[Cloak] Ollama failed, falling back to NER:', err)
     }
   }
 
-  await NERPipeline.getInstance((event) => {
-    if (event.status === ModelStatus.Loading && event.total && event.progress != null) {
-      onProgress?.({ stage: 'model', percent: event.progress })
-    }
-  })
+  if (MODEL_ENABLED) {
+    await NERPipeline.getInstance(nerModel, (event) => {
+      if (event.status === ModelStatus.Loading && event.total && event.progress != null) {
+        onProgress?.({ stage: 'model', percent: event.progress })
+      }
+    })
+  }
   const seen = new Set<string>()
   const redactions: Redaction[] = []
 
@@ -173,7 +215,7 @@ export async function detectPii(pageTexts: string[], options: DetectPiiOptions =
       redactions.push({ id: crypto.randomUUID(), type, value, page: pageNum, approved: true })
     }
 
-    const nerResults = await runNer(text)
+    const nerResults = MODEL_ENABLED ? await runNer(nerModel, text) : []
     for (const r of nerResults) {
       const group = r.entity_group
       if (!group) continue

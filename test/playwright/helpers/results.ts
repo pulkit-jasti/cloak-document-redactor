@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { testModel } from './model'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -24,6 +25,7 @@ export interface RunResult {
   }
   model: { id: string }
   regex_enabled?: boolean
+  model_enabled?: boolean
   timestamp: string
   pdfs: PdfResult[]
 }
@@ -31,7 +33,8 @@ export interface RunResult {
 
 export function writeResults(result: RunResult): void {
   const regexEnabled = process.env.VITE_REGEX_ENABLED !== 'false'
-  const data: RunResult = { ...result, regex_enabled: regexEnabled }
+  const modelEnabled = process.env.VITE_MODEL_ENABLED !== 'false'
+  const data: RunResult = { ...result, regex_enabled: regexEnabled, model_enabled: modelEnabled }
   const resultsDir = path.resolve(__dirname, '../../results')
   const runsDir = path.join(resultsDir, 'runs')
 
@@ -41,19 +44,10 @@ export function writeResults(result: RunResult): void {
   fs.mkdirSync(runsDir, { recursive: true })
   const modelSlug = data.model.id.replace(/[^a-zA-Z0-9]/g, '-')
   const ts = data.timestamp.replace(/[:.]/g, '-').replace('T', 'T').slice(0, 19)
-  const filename = `${ts}_${modelSlug}${regexEnabled ? '' : '_no-regex'}.json`
+  const filename = `${ts}_${modelSlug}${regexEnabled ? '' : '_no-regex'}${modelEnabled ? '' : '_no-model'}.json`
   fs.writeFileSync(path.join(runsDir, filename), JSON.stringify(data, null, 2))
 }
 
 export function readModelId(): string {
-  const viteModel = process.env.VITE_MODEL
-  if (viteModel && !viteModel.startsWith('bert')) return viteModel
-  try {
-    const envPath = path.resolve(__dirname, '../../../.env.local')
-    const content = fs.readFileSync(envPath, 'utf-8')
-    const match = content.match(/^VITE_MODEL_ID=(.+)$/m)
-    return match?.[1]?.trim() ?? 'unknown'
-  } catch {
-    return 'unknown'
-  }
+  return testModel()
 }

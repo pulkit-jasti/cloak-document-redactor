@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CloakProvider } from '@/context/CloakContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { OllamaProvider } from '@/context/OllamaContext';
+import { NerModelProvider } from '@/context/NerModelContext';
+import { getSavedNerModelId } from '@/lib/nerModels';
 import UploadPage from '@/pages/UploadPage';
 import PreviewPage from '@/pages/PreviewPage';
 import EditPage from '@/pages/EditPage';
@@ -40,7 +42,7 @@ export default function App() {
 	function loadModel() {
 		if (modelStatus !== ModelStatus.Idle) return;
 		setModelStatus(ModelStatus.Loading);
-		NERPipeline.getInstance((event) => {
+		NERPipeline.getInstance(getSavedNerModelId(), (event) => {
 			setLastEvent(event);
 			if (event.status === ModelStatus.Ready) setModelStatus(ModelStatus.Ready);
 		})
@@ -58,6 +60,7 @@ export default function App() {
 	return (
 		<ThemeProvider>
 			<OllamaProvider>
+			<NerModelProvider>
 			<BrowserRouter>
 				<CloakProvider>
 					<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} onLoad={loadModel} />
@@ -69,6 +72,7 @@ export default function App() {
 					</Routes>
 				</CloakProvider>
 			</BrowserRouter>
+			</NerModelProvider>
 			</OllamaProvider>
 		</ThemeProvider>
 	);

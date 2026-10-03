@@ -16,10 +16,6 @@ const OllamaContext = createContext<OllamaContextValue | null>(null)
 
 const STORAGE_KEY = 'cloak:ollama:model'
 
-const ENV_MODEL = (import.meta.env.VITE_MODEL as string | undefined)?.startsWith('ollama:')
-  ? (import.meta.env.VITE_MODEL as string).slice('ollama:'.length)
-  : null
-
 export function OllamaProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<OllamaStatus>('idle')
   const [models, setModels] = useState<OllamaModel[]>([])
@@ -32,7 +28,7 @@ export function OllamaProvider({ children }: { children: React.ReactNode }) {
     const result = await probeOllama()
     if (result.status === 'available') {
       setModels(result.models)
-      const saved = localStorage.getItem(STORAGE_KEY) ?? ENV_MODEL
+      const saved = localStorage.getItem(STORAGE_KEY)
       const stillAvailable = saved && result.models.some((m) => m.name === saved)
       setSelectedModelState(stillAvailable ? saved : null)
     } else {

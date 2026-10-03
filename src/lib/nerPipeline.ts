@@ -8,33 +8,38 @@ import type { NerEntity } from '@/workers/ner.worker';
 export { ModelStatus, type ProgressEvent, type NerEntity };
 
 type ProgressCallback = (event: ProgressEvent) => void;
+type ModelListener = (modelId: string, event: ProgressEvent) => void;
 
-type Pending = { resolve: (results: NerEntity[]) => void; reject: (err: Error) => void };
+type Pending = { resolve: (value: unknown) => void; reject: (err: Error) => void };
+type Loader = { promise: Promise<void>; resolve: () => void; reject: (err: Error) => void };
 
 class NERPipeline {
 	private static worker: Worker | null = null;
-	private static ready: Promise<void> | null = null;
-	private static resolveReady: (() => void) | null = null;
-	private static rejectReady: ((err: Error) => void) | null = null;
-	private static listeners = new Set<ProgressCallback>();
+	private static loaders = new Map<string, Loader>();
+	private static listeners = new Set<ModelListener>();
 	private static pending = new Map<number, Pending>();
 	private static nextId = 0;
 
-	private static emit(event: ProgressEvent) {
-		for (const listener of NERPipeline.listeners) listener(event);
+	private static emit(modelId: string, event: ProgressEvent) {
+		for (const listener of NERPipeline.listeners) listener(modelId, event);
 	}
 
-	private static handleProgress(event: ProgressInfo) {
+	private static handleProgress(modelId: string, event: ProgressInfo) {
 		if (event.status === 'progress') {
-			NERPipeline.emit({ status: ModelStatus.Loading, file: event.file, progress: Math.round(event.progress) });
+			NERPipeline.emit(modelId, { status: ModelStatus.Loading, file: event.file, progress: Math.round(event.progress) });
 		} else if (event.status === 'progress_total') {
-			NERPipeline.emit({ status: ModelStatus.Loading, progress: Math.round(event.progress), total: true });
+			NERPipeline.emit(modelId, { status: ModelStatus.Loading, progress: Math.round(event.progress), total: true });
 		}
 	}
 
+	private static failLoader(modelId: string, err: Error) {
+		NERPipeline.loaders.get(modelId)?.reject(err);
+		NERPipeline.loaders.delete(modelId);
+		NERPipeline.emit(modelId, { status: ModelStatus.Error });
+	}
+
 	private static failAll(err: Error) {
-		NERPipeline.rejectReady?.(err);
-		NERPipeline.ready = null;
+		for (const modelId of [...NERPipeline.loaders.keys()]) NERPipeline.failLoader(modelId, err);
 		for (const { reject } of NERPipeline.pending.values()) reject(err);
 		NERPipeline.pending.clear();
 	}
@@ -46,18 +51,17 @@ class NERPipeline {
 		worker.onmessage = (e: MessageEvent) => {
 			const msg = e.data;
 			if (msg.type === 'progress') {
-				NERPipeline.handleProgress(msg.event as ProgressInfo);
+				NERPipeline.handleProgress(msg.modelId, msg.event as ProgressInfo);
 			} else if (msg.type === 'ready') {
-				NERPipeline.emit({ status: ModelStatus.Ready });
-				NERPipeline.resolveReady?.();
+				NERPipeline.emit(msg.modelId, { status: ModelStatus.Ready });
+				NERPipeline.loaders.get(msg.modelId)?.resolve();
 			} else if (msg.type === 'loadError') {
-				NERPipeline.rejectReady?.(new Error(msg.message));
-				NERPipeline.ready = null;
-			} else if (msg.type === 'result' || msg.type === 'runError') {
+				NERPipeline.failLoader(msg.modelId, new Error(msg.message));
+			} else if (msg.type === 'reply' || msg.type === 'replyError') {
 				const pending = NERPipeline.pending.get(msg.id);
 				if (!pending) return;
 				NERPipeline.pending.delete(msg.id);
-				if (msg.type === 'result') pending.resolve(msg.results as NerEntity[]);
+				if (msg.type === 'reply') pending.resolve(msg.value);
 				else pending.reject(new Error(msg.message));
 			}
 		};
@@ -71,34 +75,58 @@ class NERPipeline {
 		return worker;
 	}
 
-	static getInstance(onProgress?: ProgressCallback): Promise<void> {
+	private static request<T>(msg: Record<string, unknown>): Promise<T> {
+		const worker = NERPipeline.getWorker();
+		const id = NERPipeline.nextId++;
+		return new Promise<T>((resolve, reject) => {
+			NERPipeline.pending.set(id, { resolve: resolve as (value: unknown) => void, reject });
+			worker.postMessage({ ...msg, id });
+		});
+	}
+
+	static subscribe(listener: ModelListener): () => void {
+		NERPipeline.listeners.add(listener);
+		return () => NERPipeline.listeners.delete(listener);
+	}
+
+	static getInstance(modelId: string, onProgress?: ProgressCallback): Promise<void> {
 		const worker = NERPipeline.getWorker();
 
-		if (!NERPipeline.ready) {
-			NERPipeline.ready = new Promise<void>((resolve, reject) => {
-				NERPipeline.resolveReady = resolve;
-				NERPipeline.rejectReady = reject;
+		let loader = NERPipeline.loaders.get(modelId);
+		if (!loader) {
+			let resolve!: () => void;
+			let reject!: (err: Error) => void;
+			const promise = new Promise<void>((res, rej) => {
+				resolve = res;
+				reject = rej;
 			});
-			worker.postMessage({ type: 'load' });
+			loader = { promise, resolve, reject };
+			NERPipeline.loaders.set(modelId, loader);
+			worker.postMessage({ type: 'load', modelId });
 		}
 
-		const ready = NERPipeline.ready;
+		const ready = loader.promise;
 		if (onProgress) {
-			NERPipeline.listeners.add(onProgress);
-			const remove = () => NERPipeline.listeners.delete(onProgress);
-			ready.then(remove, remove);
+			const unsubscribe = NERPipeline.subscribe((id, event) => {
+				if (id === modelId) onProgress(event);
+			});
+			ready.then(unsubscribe, unsubscribe);
 		}
 
 		return ready;
 	}
 
-	static run(chunks: string[]): Promise<NerEntity[]> {
-		const worker = NERPipeline.getWorker();
-		const id = NERPipeline.nextId++;
-		return new Promise<NerEntity[]>((resolve, reject) => {
-			NERPipeline.pending.set(id, { resolve, reject });
-			worker.postMessage({ type: 'run', id, chunks });
-		});
+	static run(modelId: string, chunks: string[]): Promise<NerEntity[]> {
+		return NERPipeline.request<NerEntity[]>({ type: 'run', modelId, chunks });
+	}
+
+	static isCached(modelId: string): Promise<boolean> {
+		return NERPipeline.request<boolean>({ type: 'isCached', modelId });
+	}
+
+	static async remove(modelId: string): Promise<void> {
+		NERPipeline.loaders.delete(modelId);
+		await NERPipeline.request<void>({ type: 'remove', modelId });
 	}
 }
 

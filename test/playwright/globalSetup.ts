@@ -1,4 +1,5 @@
 import http from 'http'
+import { isOllamaTest, testModel } from './helpers/model'
 
 function checkServer(url: string): Promise<boolean> {
   return new Promise((resolve) => {
@@ -7,8 +8,7 @@ function checkServer(url: string): Promise<boolean> {
 }
 
 export default async function globalSetup() {
-  const testModel = process.env.VITE_MODEL ?? 'bert'
-  const isOllama = testModel.startsWith('ollama:')
+  const isOllama = isOllamaTest()
 
   const checks: Promise<boolean>[] = [
     checkServer('http://localhost:5173'),
@@ -30,7 +30,7 @@ export default async function globalSetup() {
     process.exit(1)
   }
   if (isOllama && !ollamaUp) {
-    const model = testModel.slice('ollama:'.length)
+    const model = testModel().slice('ollama:'.length)
     console.error(`Ollama not running. Start it with: OLLAMA_ORIGINS=${process.env.npm_lifecycle_script ?? '<app-origin>'} ollama serve`)
     console.error(`Make sure model "${model}" is pulled: ollama pull ${model}`)
     process.exit(1)

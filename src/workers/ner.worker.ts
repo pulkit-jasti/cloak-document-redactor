@@ -1,72 +1,122 @@
 import {
   pipeline,
   env,
+  ModelRegistry,
   type TokenClassificationPipeline,
   type ProgressInfo,
 } from '@huggingface/transformers'
+import { NER_TASK, getNerModel, nerLoadOptions } from '@/lib/nerModels'
+import { isOpfsAvailable, opfsCache } from './opfsCache'
+import { runViterbi } from './viterbi'
 
 const MODEL_BASE_URL = import.meta.env.VITE_MODEL_BASE_URL as string
-const MODEL_ID = import.meta.env.VITE_MODEL_ID as string
 const IS_DEV = import.meta.env.VITE_ENV === 'development'
 
-type InMsg = { type: 'load' } | { type: 'run'; id: number; chunks: string[] }
+if (IS_DEV) {
+  env.remoteHost = MODEL_BASE_URL
+  env.remotePathTemplate = '{model}/'
+  env.allowLocalModels = false
+}
+
+if (isOpfsAvailable()) {
+  env.useCustomCache = true
+  env.customCache = opfsCache
+  if (typeof caches !== 'undefined') caches.delete(env.cacheKey).catch(() => {})
+}
+
+type InMsg =
+  | { type: 'load'; modelId: string }
+  | { type: 'run'; id: number; modelId: string; chunks: string[] }
+  | { type: 'isCached'; id: number; modelId: string }
+  | { type: 'remove'; id: number; modelId: string }
 
 export type NerEntity = { entity_group?: string; word: string }
 
-let pipePromise: Promise<TokenClassificationPipeline> | null = null
+const pipes = new Map<string, Promise<TokenClassificationPipeline>>()
 
-async function logDevInfo() {
-  const adapter = await navigator.gpu?.requestAdapter().catch(() => null)
-  console.log(`[Cloak] model ready: ${adapter ? 'webgpu' : 'wasm (cpu fallback)'}`)
-  if (adapter?.info) console.log('[Cloak] GPU info', adapter.info)
+function modelPath(modelId: string) {
+  return IS_DEV ? modelId : getNerModel(modelId).repo
 }
 
-function loadPipeline() {
-  if (pipePromise) return pipePromise
+function logDevInfo(modelId: string) {
+  const { device, dtype } = nerLoadOptions(modelId)
+  console.log(`[Cloak] ${modelId} ready: ${device} ${dtype}`)
+}
 
-  if (IS_DEV) {
-    env.remoteHost = MODEL_BASE_URL
-    env.remotePathTemplate = '{model}/'
-    env.allowLocalModels = false
-  }
+function loadPipeline(modelId: string) {
+  const existing = pipes.get(modelId)
+  if (existing) return existing
 
-  pipePromise = pipeline('token-classification', MODEL_ID, {
-    progress_callback: (event: ProgressInfo) => self.postMessage({ type: 'progress', event }),
+  const pipePromise = pipeline(NER_TASK, modelPath(modelId), {
+    ...nerLoadOptions(modelId),
+    progress_callback: (event: ProgressInfo) => self.postMessage({ type: 'progress', modelId, event }),
   }) as Promise<TokenClassificationPipeline>
+  pipes.set(modelId, pipePromise)
 
   pipePromise.then(
     () => {
-      if (IS_DEV) logDevInfo()
-      self.postMessage({ type: 'ready' })
+      if (IS_DEV) logDevInfo(modelId)
+      self.postMessage({ type: 'ready', modelId })
     },
     (err) => {
-      pipePromise = null
-      self.postMessage({ type: 'loadError', message: err instanceof Error ? err.message : String(err) })
+      pipes.delete(modelId)
+      self.postMessage({ type: 'loadError', modelId, message: err instanceof Error ? err.message : String(err) })
     },
   )
 
   return pipePromise
 }
 
+async function unloadPipeline(modelId: string) {
+  const pipePromise = pipes.get(modelId)
+  if (!pipePromise) return
+  pipes.delete(modelId)
+  const pipe = await pipePromise.catch(() => null)
+  await pipe?.dispose()
+}
+
+async function unloadOthers(modelId: string) {
+  await Promise.all([...pipes.keys()].filter((id) => id !== modelId).map(unloadPipeline))
+}
+
+async function runNer(modelId: string, chunks: string[]) {
+  const pipe = await loadPipeline(modelId)
+  await unloadOthers(modelId)
+  const results: NerEntity[] = []
+  const viterbi = getNerModel(modelId).decoder === 'viterbi'
+  for (const chunk of chunks) {
+    if (viterbi) {
+      results.push(...(await runViterbi(pipe, chunk)))
+      continue
+    }
+    const output = await pipe(chunk, { aggregation_strategy: 'simple' })
+    for (const r of Array.from(output as ArrayLike<(typeof output)[number]>)) {
+      results.push({ entity_group: 'entity_group' in r ? r.entity_group : undefined, word: r.word })
+    }
+  }
+  return results
+}
+
+async function removeModel(modelId: string) {
+  await unloadPipeline(modelId)
+  await ModelRegistry.clear_pipeline_cache(NER_TASK, modelPath(modelId), nerLoadOptions(modelId))
+}
+
 self.onmessage = async (e: MessageEvent<InMsg>) => {
   const msg = e.data
 
   if (msg.type === 'load') {
-    loadPipeline().catch(() => {})
+    loadPipeline(msg.modelId).catch(() => {})
     return
   }
 
   try {
-    const pipe = await loadPipeline()
-    const results: NerEntity[] = []
-    for (const chunk of msg.chunks) {
-      const output = await pipe(chunk, { aggregation_strategy: 'simple' })
-      for (const r of Array.from(output as ArrayLike<(typeof output)[number]>)) {
-        results.push({ entity_group: 'entity_group' in r ? r.entity_group : undefined, word: r.word })
-      }
-    }
-    self.postMessage({ type: 'result', id: msg.id, results })
+    let value: unknown
+    if (msg.type === 'run') value = await runNer(msg.modelId, msg.chunks)
+    else if (msg.type === 'isCached') value = await ModelRegistry.is_pipeline_cached(NER_TASK, modelPath(msg.modelId), nerLoadOptions(msg.modelId))
+    else await removeModel(msg.modelId)
+    self.postMessage({ type: 'reply', id: msg.id, value })
   } catch (err) {
-    self.postMessage({ type: 'runError', id: msg.id, message: err instanceof Error ? err.message : String(err) })
+    self.postMessage({ type: 'replyError', id: msg.id, message: err instanceof Error ? err.message : String(err) })
   }
 }
