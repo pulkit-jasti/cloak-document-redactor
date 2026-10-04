@@ -10,13 +10,16 @@
     { "value": "Strasbourg", "type": "location" },
     { "value": "Slovakia", "type": "location" },
     { "value": "Bratislava", "type": "location" },
-    { "value": "20 May 2021", "type": "date" },
-    { "value": "22 April 2021", "type": "date" },
-    { "value": "11 November 2019", "type": "date" },
-    { "value": "8 December 2006", "type": "date" },
-    { "value": "1953", "type": "date" },
+    { "value": "1953", "type": "date_of_birth" },
     { "value": "8,200", "type": "financial" },
     { "value": "1,000 EUR", "type": "financial" },
-    { "value": "62753/19", "type": "identifier" }
+    { "value": "62753/19", "type": "identifier" },
+    { "value": "Sarkocy", "type": "person" },
+    { "value": "Šedý", "type": "person" },
+    { "value": "Čičmanec", "type": "person" },
+    { "value": "Robins", "type": "person" },
+    { "value": "Macková", "type": "person" },
+    { "value": "Frydlender", "type": "person" },
+    { "value": "Obluk", "type": "person" }
   ]
 }

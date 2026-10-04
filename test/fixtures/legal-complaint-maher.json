@@ -1,0 +1,26 @@
+{
+  "source": "legal-complaint-maher.pdf",
+  "pii": [
+    { "value": "Edward John Maher", "type": "person" },
+    { "value": "Edward Maher", "type": "person" },
+    { "value": "Eddie Maher", "type": "person" },
+    { "value": "Michael Maher", "type": "person" },
+    { "value": "Maher", "type": "person" },
+    { "value": "Deborah Ann Brett", "type": "person" },
+    { "value": "Brett", "type": "person" },
+    { "value": "Stephen King", "type": "person" },
+    { "value": "Jeffrey W. Atwood", "type": "person" },
+    { "value": "Atwood", "type": "person" },
+    { "value": "Patrick Thomas", "type": "person" },
+    { "value": "James C. England", "type": "person" },
+    { "value": "06-02-1955", "type": "date_of_birth" },
+    { "value": "6/2/1955", "type": "date_of_birth" },
+    { "value": "4/17/1951", "type": "date_of_birth" },
+    { "value": "5117 North 23rd Street, Ozark, Missouri", "type": "address" },
+    { "value": "449068", "type": "identifier" },
+    { "value": "583190", "type": "identifier" },
+    { "value": "61-13-002918-06", "type": "identifier" },
+    { "value": "6:12-mj-02051-JCE", "type": "identifier" },
+    { "value": "12-2051JCE-01", "type": "identifier" }
+  ]
+}

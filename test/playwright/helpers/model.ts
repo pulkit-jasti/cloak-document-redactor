@@ -12,3 +12,7 @@ export function testModelStorage(): { name: string; value: string }[] {
     ? [{ name: 'cloak:ollama:model', value: model.slice('ollama:'.length) }]
     : [{ name: 'cloak:ner:model', value: model }]
 }
+
+export function testSet(): string {
+  return process.env.VITE_TEST_SET?.trim() || '1'
+}

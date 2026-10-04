@@ -1,0 +1,21 @@
+{
+  "source": "legal-complaint-wajid.pdf",
+  "pii": [
+    { "value": "Juma Wajid", "type": "person" },
+    { "value": "Wajid", "type": "person" },
+    { "value": "Jay Khan", "type": "person" },
+    { "value": "Jamal Anthony", "type": "person" },
+    { "value": "Stacey D. Adams", "type": "person" },
+    { "value": "Stacey D Adams", "type": "person" },
+    { "value": "Brian Macdonald", "type": "person" },
+    { "value": "10kbizdotnet", "type": "username" },
+    { "value": "jumawajid", "type": "username" },
+    { "value": "10kbiz", "type": "username" },
+    { "value": "@Tenkbizcc", "type": "username" },
+    { "value": "@tenkbizdotcom", "type": "username" },
+    { "value": "jaykhan0624", "type": "username" },
+    { "value": "EP74462", "type": "license_plate" },
+    { "value": "24-15256", "type": "identifier" },
+    { "value": "2024R00513/TAC", "type": "identifier" }
+  ]
+}

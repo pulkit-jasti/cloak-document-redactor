@@ -24,11 +24,15 @@ export default class PiiReporter implements Reporter {
         redacted: acc.redacted + r.redacted.length,
         missed: acc.missed + r.missed.length,
         catch_rate: 0,
+        detected: acc.detected + r.detected_count,
+        false_positives: acc.false_positives + r.false_positives.length,
+        false_positive_rate: 0,
         duration_ms: acc.duration_ms + r.duration_ms,
       }),
-      { fixture_items: 0, redacted: 0, missed: 0, catch_rate: 0, duration_ms: 0 }
+      { fixture_items: 0, redacted: 0, missed: 0, catch_rate: 0, detected: 0, false_positives: 0, false_positive_rate: 0, duration_ms: 0 }
     )
     totals.catch_rate = totals.fixture_items > 0 ? totals.redacted / totals.fixture_items : 0
+    totals.false_positive_rate = totals.detected > 0 ? totals.false_positives / totals.detected : 0
 
     writeResults({
       totals,

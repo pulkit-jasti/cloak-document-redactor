@@ -173,6 +173,14 @@ Then use **Connect Ollama** on the landing page and pick a model in the model se
 
 The tests need the dev server running, plus the model server (`npm run models`) or, for Ollama runs (`VITE_MODEL=ollama:<model>`), Ollama on port 11434. Results are written to `test/results/` (gitignored).
 
+### Test documents
+
+- All test PDFs are publicly available documents, used unchanged.
+- Sources include justice.gov, House financial disclosures, ECHR, California WCAB, Hennepin County, county courts, UC Davis and arXiv.
+- No private or leaked data. Any personal details were already made public by the source.
+- Used only to measure detection quality. Rights stay with the original owners.
+- Anyone named in a document, or who owns one, can open an issue in github to have it removed
+
 ## Known limitations
 
 - **English only, by design.** Documents in other languages are not supported and won't be.

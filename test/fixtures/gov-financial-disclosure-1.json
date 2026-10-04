@@ -11,13 +11,8 @@
     { "value": "Chase Bank", "type": "organization" },
     { "value": "Citi Bank", "type": "organization" },
     { "value": "Guideline 401(k)", "type": "organization" },
-    { "value": "Santa Rosa CA", "type": "location" },
-    { "value": "Washington DC", "type": "location" },
-    { "value": "05/14/2024", "type": "date" },
-    { "value": "October 2005", "type": "date" },
-    { "value": "August 2019", "type": "date" },
-    { "value": "December 2022", "type": "date" },
-    { "value": "January 2019", "type": "date" },
+    { "value": "Santa Rosa, CA", "type": "location" },
+    { "value": "Washington, DC", "type": "location" },
     { "value": "MN05", "type": "identifier" }
   ]
 }

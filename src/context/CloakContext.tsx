@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import type { Redaction } from "@/types"
 
 export type { Redaction }
@@ -29,6 +29,10 @@ export function CloakProvider({ children }: { children: React.ReactNode }) {
   const [entities, setEntities] = useState<Redaction[] | null>(null)
   const [cloakStats, setCloakStats] = useState<CloakStats | null>(null)
   const blobUrlRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (import.meta.env.DEV) (window as Window & { __cloakEntities?: Redaction[] | null }).__cloakEntities = entities
+  }, [entities])
 
   const setPdf = (url: string, bytes: Uint8Array, name: string) => {
     blobUrlRef.current = url

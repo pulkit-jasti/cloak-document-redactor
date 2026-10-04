@@ -20,15 +20,16 @@
     { "value": "Employment Development Department", "type": "organization" },
     { "value": "Healthchoice Management", "type": "organization" },
     { "value": "Oxnard District Office", "type": "location" },
-    { "value": "March 12, 2020", "type": "date" },
-    { "value": "December 15, 2020", "type": "date" },
-    { "value": "November 15, 2021", "type": "date" },
     { "value": "Complex Regional Pain Syndrome", "type": "medical_condition" },
     { "value": "CRPS", "type": "medical_condition" },
     { "value": "$12,470.00", "type": "financial" },
     { "value": "$26,200.00", "type": "financial" },
     { "value": "$655.00", "type": "financial" },
     { "value": "$290.00", "type": "financial" },
-    { "value": "ADJ14201376", "type": "identifier" }
+    { "value": "ADJ14201376", "type": "identifier" },
+    { "value": "Kalve", "type": "person" },
+    { "value": "Miller", "type": "person" },
+    { "value": "Shalom", "type": "person" },
+    { "value": "Ramos", "type": "person" }
   ]
 }

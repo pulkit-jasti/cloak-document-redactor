@@ -9,7 +9,7 @@
     { "value": "Christopher D. Man", "type": "person" },
     { "value": "Robert Hunter Biden", "type": "person" },
     { "value": "Mark C. Scarsi", "type": "person" },
-    { "value": "Mark Weiss", "type": "person" },
+    { "value": "Weiss", "type": "person" },
     { "value": "Alexander Smirnov", "type": "person" },
     { "value": "Priscilla DeGregory", "type": "person" },
     { "value": "Josh Christenson", "type": "person" },
@@ -17,9 +17,9 @@
     { "value": "Marshall Cohen", "type": "person" },
     { "value": "GERAGOS & GERAGOS APC", "type": "organization" },
     { "value": "WINSTON & STRAWN LLP", "type": "organization" },
-    { "value": "644 South Figueroa Street Los Angeles CA 90017-3411", "type": "location" },
-    { "value": "333 S. Grand Avenue 38th Fl. Los Angeles CA 90071-1543", "type": "location" },
-    { "value": "1901 L Street NW Washington DC 20036-3508", "type": "location" },
+    { "value": "644 South Figueroa Street Los Angeles, CA 90017-3411", "type": "location" },
+    { "value": "333 S. Grand Avenue, 38th Fl. Los Angeles, CA 90071-1543", "type": "location" },
+    { "value": "1901 L Street NW Washington, DC 20036-3508", "type": "location" },
     { "value": "(213) 625-3900", "type": "phone" },
     { "value": "(213) 232-3255", "type": "phone" },
     { "value": "AMachala@winston.com", "type": "email" },
@@ -28,6 +28,12 @@
     { "value": "SBN 108325", "type": "identifier" },
     { "value": "SBN 251614", "type": "identifier" },
     { "value": "SBN 283552", "type": "identifier" },
-    { "value": "SBN 224496", "type": "identifier" }
+    { "value": "SBN: 224496", "type": "identifier" },
+    { "value": "Mark Geragos", "type": "person" },
+    { "value": "Geragos", "type": "person" },
+    { "value": "Hunter Biden", "type": "person" },
+    { "value": "Biden", "type": "person" },
+    { "value": "Smith", "type": "person" },
+    { "value": "Chambers", "type": "person" }
   ]
 }

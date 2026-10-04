@@ -1,0 +1,33 @@
+{
+  "source": "finance-loan-application-1003.pdf",
+  "pii": [
+    { "value": "Jamil Satterfield", "type": "person" },
+    { "value": "Hannah Jaskolski", "type": "person" },
+    { "value": "Alaina Torphy", "type": "person" },
+    { "value": "Rahul Wiegand", "type": "person" },
+    { "value": "Raymond Hayes", "type": "person" },
+    { "value": "Zena Denesik", "type": "person" },
+    { "value": "Eula Brekke", "type": "person" },
+    { "value": "Lottie Marvin", "type": "person" },
+    { "value": "626-23-8721", "type": "ssn" },
+    { "value": "Manuela@company.com", "type": "email" },
+    { "value": "Katherine@company.com", "type": "email" },
+    { "value": "811 542 8082", "type": "phone" },
+    { "value": "4594 Flatley Ford", "type": "address" },
+    { "value": "40493 Ashly Rue", "type": "address" },
+    { "value": "872 Emanuel Fort", "type": "address" },
+    { "value": "2871 Corene Rapid", "type": "address" },
+    { "value": "997 Dominic Burgs", "type": "address" },
+    { "value": "404 Lyla Flats", "type": "address" },
+    { "value": "589 Ferry Court", "type": "address" },
+    { "value": "New Demarcusport", "type": "location" },
+    { "value": "Port Mustafaton", "type": "location" },
+    { "value": "Lake Anabel", "type": "location" },
+    { "value": "9648-1835664", "type": "account_number" },
+    { "value": "2930-8040258", "type": "account_number" },
+    { "value": "1604635", "type": "account_number" },
+    { "value": "8741581", "type": "account_number" },
+    { "value": "406090-9513", "type": "account_number" },
+    { "value": "512132-5383", "type": "account_number" }
+  ]
+}
