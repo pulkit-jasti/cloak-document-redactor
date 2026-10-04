@@ -16,6 +16,11 @@
     { "value": "jaykhan0624", "type": "username" },
     { "value": "EP74462", "type": "license_plate" },
     { "value": "24-15256", "type": "identifier" },
-    { "value": "2024R00513/TAC", "type": "identifier" }
+    { "value": "2024R00513/TAC", "type": "identifier" },
+    { "value": "10kbiz.net", "type": "url" },
+    { "value": "10kbiz.com", "type": "url" },
+    { "value": "Fauxids.com", "type": "url" },
+    { "value": "Chasetradelines.com", "type": "url" },
+    { "value": "BlackCreditScores.com", "type": "url" }
   ]
 }

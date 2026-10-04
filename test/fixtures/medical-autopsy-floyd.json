@@ -34,6 +34,11 @@
     { "value": "NMSCP59310", "type": "identifier" },
     { "value": "Floyd", "type": "person" },
     { "value": "Andrew Baker", "type": "person" },
-    { "value": "Baker", "type": "person" }
+    { "value": "Baker", "type": "person" },
+    { "value": "Brittney", "type": "person" },
+    { "value": "Kitzman", "type": "person" },
+    { "value": "Scholz", "type": "person" },
+    { "value": "Hagen", "type": "person" },
+    { "value": "148889", "type": "identifier" }
   ]
 }

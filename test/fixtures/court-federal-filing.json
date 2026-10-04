@@ -34,6 +34,17 @@
     { "value": "Hunter Biden", "type": "person" },
     { "value": "Biden", "type": "person" },
     { "value": "Smith", "type": "person" },
-    { "value": "Chambers", "type": "person" }
+    { "value": "Chambers", "type": "person" },
+    { "value": "Fink", "type": "person" },
+    { "value": "Gomez", "type": "person" },
+    { "value": "(202) 282-5000", "type": "phone" },
+    { "value": "(202) 282-5100", "type": "phone" },
+    { "value": "(213) 615-1700", "type": "phone" },
+    { "value": "(213) 615-1750", "type": "phone" },
+    { "value": "2:23-cr-00599-MCS", "type": "identifier" },
+    { "value": "2:23-cr-00599-MCS-1", "type": "identifier" },
+    { "value": "1901 L Street NW", "type": "address" },
+    { "value": "644 South Figueroa Street", "type": "address" },
+    { "value": "333 S. Grand Avenue, 38th Fl.", "type": "address" }
   ]
 }

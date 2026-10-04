@@ -20,6 +20,15 @@
     { "value": "Robins", "type": "person" },
     { "value": "Macková", "type": "person" },
     { "value": "Frydlender", "type": "person" },
-    { "value": "Obluk", "type": "person" }
+    { "value": "Obluk", "type": "person" },
+    { "value": "72237/01", "type": "identifier" },
+    { "value": "65302/11", "type": "identifier" },
+    { "value": "22410/93", "type": "identifier" },
+    { "value": "51543/99/98", "type": "identifier" },
+    { "value": "30979/96", "type": "identifier" },
+    { "value": "69484/01", "type": "identifier" },
+    { "value": "US 433/2018", "type": "identifier" },
+    { "value": "5 C 813/2008", "type": "identifier" },
+    { "value": "10 C 34/2013", "type": "identifier" }
   ]
 }

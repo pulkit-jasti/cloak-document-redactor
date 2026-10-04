@@ -22,6 +22,10 @@
     { "value": "Los Angeles, California", "type": "location" },
     { "value": "Anaheim District Office", "type": "location" },
     { "value": "$1,251.38", "type": "financial" },
-    { "value": "ADJ11734603", "type": "identifier" }
+    { "value": "ADJ11734603", "type": "identifier" },
+    { "value": "KM Meat Company, Inc.", "type": "organization" },
+    { "value": "K M Meat Co., Inc", "type": "organization" },
+    { "value": "Starr Indemnity & Liability Company", "type": "organization" },
+    { "value": "Starr Indemnity & Liability Co", "type": "organization" }
   ]
 }

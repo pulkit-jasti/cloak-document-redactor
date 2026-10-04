@@ -91,12 +91,12 @@ test.describe('PII detection report', () => {
         fs.unlinkSync(tmpPath)
       }
 
-      const normalised = extractedText.toLowerCase()
+      const normalised = norm(extractedText)
       const redacted: string[] = []
       const missed: string[] = []
 
       for (const item of fixture.pii) {
-        if (normalised.includes(item.value.toLowerCase())) {
+        if (hasWholeWord(normalised, norm(item.value))) {
           missed.push(item.value)
         } else {
           redacted.push(item.value)

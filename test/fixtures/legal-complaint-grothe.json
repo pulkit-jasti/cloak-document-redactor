@@ -15,6 +15,7 @@
     { "value": "KNE-422", "type": "license_plate" },
     { "value": "07-CR-25-4224", "type": "identifier" },
     { "value": "0070111925", "type": "identifier" },
-    { "value": "25030161", "type": "identifier" }
+    { "value": "25030161", "type": "identifier" },
+    { "value": "3142", "type": "identifier" }
   ]
 }

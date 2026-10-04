@@ -1,10 +1,12 @@
-import NERPipeline, { ModelStatus } from "@/lib/nerPipeline"
+import NERPipeline, { ModelStatus, type NerEntity } from "@/lib/nerPipeline"
 import { DEFAULT_NER_MODEL_ID } from "@/lib/nerModels"
 import type { PageStats, Redaction } from "@/types"
 import { findPhoneNumbersInText } from "libphonenumber-js"
 import isEmail from "validator/es/lib/isEmail"
 import isCreditCard from "validator/es/lib/isCreditCard"
 import isIBAN from "validator/es/lib/isIBAN"
+import isIP from "validator/es/lib/isIP"
+import { strict as chrono } from "chrono-node"
 
 export const ENTITY_LABELS: Record<string, string> = {
   PER: "Person",
@@ -42,10 +44,17 @@ export const ENTITY_LABELS: Record<string, string> = {
   DEVICE_ID: "Device ID",
 }
 
+const MIN_SCORE: Record<string, number> = {
+  Person: 0.7,
+  Organization: 0.85,
+  Location: 0.85,
+}
+const DEFAULT_MIN_SCORE = 0.6
+
 type Span = [number, number]
 
 type PiiDetector = {
-  type: string
+  type: string | null
   find: (text: string) => Span[]
 }
 
@@ -54,14 +63,49 @@ function matchAndValidate(pattern: RegExp, isValid: (match: string) => boolean) 
     [...text.matchAll(pattern)].filter((m) => isValid(m[0])).map((m) => [m.index, m.index + m[0].length])
 }
 
+const ID_VALUE = String.raw`(?=[A-Z0-9:/-]*\d)[A-Z0-9][A-Z0-9:/-]{2,}[A-Z0-9]`
+
+function labeledId(labels: string) {
+  const pattern = new RegExp(String.raw`\b(?:${labels})\b[\s:#().]*(?:(?:no|num|number)\b\.?[\s:#().]*)?(${ID_VALUE})`, "gi")
+  return (text: string): Span[] =>
+    [...text.matchAll(pattern)].map((m) => {
+      const start = m.index + m[0].length - m[1].length
+      return [start, start + m[1].length]
+    })
+}
+
+const TITLED_NAME = /\b(?:Dr|Mr|Mrs|Ms|Judge|Justice|SA|Agent|Officer|Commander|Sergeant|Sgt|Det|Detective|Inspector|Counsel)\.?\s+([A-Z][a-zA-Z-]*(?:['’][A-Z][a-zA-Z-]+)?(?:\s+[A-Z]\.)?(?:\s+[A-Z][a-zA-Z-]*(?:['’][A-Z][a-zA-Z-]+)?){0,2})/g
+
+function findTitledNames(text: string): Span[] {
+  return [...text.matchAll(TITLED_NAME)].map((m) => {
+    const start = m.index + m[0].length - m[1].length
+    return [start, start + m[1].length]
+  })
+}
+
+function findBirthDates(text: string): Span[] {
+  const dates: Span[] = chrono
+    .parse(text)
+    .filter((r) => hasBirthContext(text, r.index))
+    .map((r) => [r.index, r.index + r.text.length])
+  for (const m of text.matchAll(/\b(?:year of birth|yob|dob|born(?:\s+in)?)\b[\s:]*((?:19|20)\d{2})\b/gi)) {
+    const start = m.index + m[0].length - m[1].length
+    dates.push([start, start + 4])
+  }
+  return dates
+}
+
 const PII_DETECTORS: PiiDetector[] = [
   {
     type: "Email",
     find: matchAndValidate(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, (m) => isEmail(m)),
   },
   {
-    type: "Phone",
-    find: (text) => findPhoneNumbersInText(text, "US").map((m) => [m.startsAt, m.endsAt]),
+    type: "IP Address",
+    find: (text) => [
+      ...matchAndValidate(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, (m) => isIP(m, 4))(text),
+      ...matchAndValidate(/(?:[0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{1,4}/g, (m) => isIP(m, 6))(text),
+    ],
   },
   {
     type: "Credit Card",
@@ -74,6 +118,46 @@ const PII_DETECTORS: PiiDetector[] = [
   {
     type: "SSN",
     find: matchAndValidate(/\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/g, isValidSsn),
+  },
+  {
+    type: "Date of Birth",
+    find: findBirthDates,
+  },
+  {
+    type: "Passport",
+    find: labeledId(String.raw`passport(?:\s+card)?`),
+  },
+  {
+    type: "Visa",
+    find: labeledId("visa"),
+  },
+  {
+    type: "Case Number",
+    find: (text) => [
+      ...labeledId("case|file|docket|magistrate|application|adjudication")(text),
+      ...matchAndValidate(/\b\d{1,2}:\d{2}-[a-z]{2,3}-\d{3,6}(?:-[A-Z]{2,4})*\b/gi, () => true)(text),
+      ...matchAndValidate(/\b\d{2}-\d{4}-\d{6,8}(?:-[A-Z]{2,5})+\b/g, () => true)(text),
+    ],
+  },
+  {
+    type: "License Plate",
+    find: labeledId(String.raw`(?:license\s+)?plate`),
+  },
+  {
+    type: "ID Number",
+    find: labeledId(String.raw`serial|sbn|badge|id|driver'?s\s+license|license`),
+  },
+  {
+    type: "Person",
+    find: findTitledNames,
+  },
+  {
+    type: null,
+    find: (text) => chrono.parse(text).map((r) => [r.index, r.index + r.text.length]),
+  },
+  {
+    type: "Phone",
+    find: (text) => findPhoneNumbersInText(text, "US").map((m) => [m.startsAt, m.endsAt]),
   },
 ]
 
@@ -89,6 +173,12 @@ const MODEL_ENABLED = import.meta.env.VITE_MODEL_ENABLED !== "false"
 const CHUNK_WORDS = 200
 const OVERLAP_WORDS = 30
 
+function titleCaseCapsRuns(line: string): string {
+  return line.replace(/\b[A-Z][A-Z'’-]+(?:\s+[A-Z][A-Z'’.-]*)+\b/g, (run) =>
+    run.replace(/[A-Z][A-Z'’-]*/g, (word) => word[0] + word.slice(1).toLowerCase()),
+  )
+}
+
 function cleanTextForNer(text: string): string {
   return text
     .split("\n")
@@ -97,7 +187,7 @@ function cleanTextForNer(text: string): string {
       line = line.replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}:\d{2}\b/g, "")
       line = line.replace(/\bL\d{6,}-\d+\b/g, "")
       line = line.replace(/#\s*\S+/g, "")
-      return line
+      return titleCaseCapsRuns(line)
     })
     .filter((line) => /[a-zA-Z]{2,}/.test(line))
     .join("\n")
@@ -118,18 +208,79 @@ export function valueKey(value: string): string {
   return value.trim().replace(/\s+/g, " ").toLowerCase()
 }
 
-export function extractRegexEntities(text: string): Array<{ type: string; value: string }> {
-  if (!REGEX_ENABLED) return []
-  const results: Array<{ type: string; value: string }> = []
-  const taken: Span[] = []
+const WORD_CHAR = /[\p{L}\p{N}]/u
+const BIRTH_CONTEXT = /\b(dob|d\.o\.b|date of birth|birth\s?date|birthday|born|year of birth)\b/i
+const BIRTH_WINDOW = 40
+
+function hasBirthContext(text: string, index: number): boolean {
+  return BIRTH_CONTEXT.test(text.slice(Math.max(0, index - BIRTH_WINDOW), index))
+}
+
+function isBirthDate(value: string, text: string): boolean {
+  let i = text.indexOf(value)
+  while (i !== -1) {
+    if (hasBirthContext(text, i)) return true
+    i = text.indexOf(value, i + 1)
+  }
+  return false
+}
+
+function snapToWords(word: string, text: string): string {
+  const parts = word.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return ''
+  const match = new RegExp(parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*'), 'iu').exec(text)
+  if (!match) return word.trim()
+  let start = match.index
+  let end = start + match[0].length
+  while (start > 0 && WORD_CHAR.test(text[start - 1])) start--
+  while (end < text.length && WORD_CHAR.test(text[end])) end++
+  return text.slice(start, end)
+}
+
+const NAME_SUFFIX = /^(jr|sr|ii|iii|iv|md|phd|esq)\.?$/i
+
+export function spreadSurnames(redactions: Redaction[]): Redaction[] {
+  const seen = new Set(redactions.map((r) => valueKey(r.value)))
+  const added: Redaction[] = []
+  for (const r of redactions) {
+    if (r.type !== "Person") continue
+    const words = r.value.replace(/,/g, " ").split(/\s+/).filter((w) => !NAME_SUFFIX.test(w))
+    if (words.length < 2) continue
+    const surname = words[words.length - 1].replace(/[^\p{L}'’-]/gu, "")
+    if (surname.length < 3 || !/^\p{Lu}/u.test(surname)) continue
+    const key = valueKey(surname)
+    if (seen.has(key)) continue
+    seen.add(key)
+    added.push({ ...r, id: crypto.randomUUID(), value: surname })
+  }
+  return [...redactions, ...added]
+}
+
+export type RegexResult = { entities: Array<{ type: string; value: string }>; claimed: Span[] }
+
+export function extractRegexEntities(text: string): RegexResult {
+  const entities: Array<{ type: string; value: string }> = []
+  const claimed: Span[] = []
+  if (!REGEX_ENABLED) return { entities, claimed }
   for (const { type, find } of PII_DETECTORS) {
     for (const [start, end] of find(text)) {
-      if (taken.some(([s, e]) => start < e && end > s)) continue
-      taken.push([start, end])
-      results.push({ type, value: text.slice(start, end).trim() })
+      if (claimed.some(([s, e]) => start < e && end > s)) continue
+      claimed.push([start, end])
+      if (type) entities.push({ type, value: text.slice(start, end).trim() })
     }
   }
-  return results
+  return { entities, claimed }
+}
+
+export function isClaimed(value: string, text: string, claimed: Span[]): boolean {
+  let i = text.indexOf(value)
+  if (i === -1) return false
+  while (i !== -1) {
+    const end = i + value.length
+    if (!claimed.some(([s, e]) => i < e && end > s)) return false
+    i = text.indexOf(value, i + 1)
+  }
+  return true
 }
 
 export type CloakProgress =
@@ -171,13 +322,15 @@ export interface DetectPiiOptions {
   onProgress?: (progress: CloakProgress) => void
 }
 
+const COMBINE_WITH_MODEL: string = 'bert-base-ner'
+
 export async function detectPii(pageTexts: string[], options: DetectPiiOptions = {}): Promise<Redaction[]> {
   const { mode = 'ner', nerModel = DEFAULT_NER_MODEL_ID, ollamaModel, signal, onProgress } = options
 
   if (MODEL_ENABLED && mode === 'ollama' && ollamaModel) {
     const { detectPiiWithOllama } = await import('@/lib/ollamaClient')
     try {
-      return await detectPiiWithOllama(pageTexts, ollamaModel, { signal, onProgress })
+      return spreadSurnames(await detectPiiWithOllama(pageTexts, ollamaModel, { signal, onProgress }))
     } catch (err) {
       if (signal?.aborted) throw err
       console.warn('[Cloak] Ollama failed, falling back to NER:', err)
@@ -194,33 +347,51 @@ export async function detectPii(pageTexts: string[], options: DetectPiiOptions =
   const seen = new Set<string>()
   const redactions: Redaction[] = []
 
+  const claimedByPage: Span[][] = []
+
+  const addNerResults = (nerResults: NerEntity[], pageNum: number, text: string) => {
+    for (const r of nerResults) {
+      const group = r.entity_group
+      if (!group || group === 'MISC') continue
+      const type = ENTITY_LABELS[group] ?? group
+      if (r.score < (MIN_SCORE[type] ?? DEFAULT_MIN_SCORE)) continue
+      const value = snapToWords(r.word.replace(/^##/, ''), text)
+      if (!value || value.length < 3) continue
+      if (/^\p{Ll}/u.test(value) || /^[A-Z]{2,4}$/.test(value)) continue
+      if (type === 'Date' && !isBirthDate(value, text)) continue
+      if (isClaimed(value, text, claimedByPage[pageNum - 1])) continue
+      if (/^(email|phone|ssn|name|address|company|location|manager|fax|date|id)$/i.test(value)) continue
+      const key = valueKey(value)
+      if (seen.has(key)) continue
+      seen.add(key)
+      redactions.push({ id: crypto.randomUUID(), type, value, page: pageNum, approved: true })
+    }
+  }
+
   for (let pageIdx = 0; pageIdx < pageTexts.length; pageIdx++) {
     signal?.throwIfAborted()
     onProgress?.({ stage: 'scanning', done: pageIdx, total: pageTexts.length, parallel: false })
     const pageNum = pageIdx + 1
     const text = pageTexts[pageIdx]
 
-    for (const { type, value } of extractRegexEntities(text)) {
+    const { entities, claimed } = extractRegexEntities(text)
+    claimedByPage[pageIdx] = claimed
+    for (const { type, value } of entities) {
       const key = valueKey(value)
       if (seen.has(key)) continue
       seen.add(key)
       redactions.push({ id: crypto.randomUUID(), type, value, page: pageNum, approved: true })
     }
 
-    const nerResults = MODEL_ENABLED ? await runNer(nerModel, text) : []
-    for (const r of nerResults) {
-      const group = r.entity_group
-      if (!group) continue
-      const value = r.word.trim()
-      if (!value || value.startsWith("##") || value.length < 3) continue
-      if (/^(email|phone|ssn|name|address|company|location|manager|fax|date|id)$/i.test(value)) continue
-      const key = valueKey(value)
-      if (seen.has(key)) continue
-      seen.add(key)
-      redactions.push({ id: crypto.randomUUID(), type: ENTITY_LABELS[group] ?? group, value, page: pageNum, approved: true })
-    }
-
+    if (MODEL_ENABLED) addNerResults(await runNer(nerModel, text), pageNum, text)
   }
 
-  return redactions
+  if (MODEL_ENABLED && COMBINE_WITH_MODEL && nerModel !== COMBINE_WITH_MODEL) {
+    for (let pageIdx = 0; pageIdx < pageTexts.length; pageIdx++) {
+      signal?.throwIfAborted()
+      addNerResults(await runNer(COMBINE_WITH_MODEL, pageTexts[pageIdx]), pageIdx + 1, pageTexts[pageIdx])
+    }
+  }
+
+  return spreadSurnames(redactions)
 }

@@ -1,5 +1,5 @@
 import type { Redaction } from '@/types'
-import { extractRegexEntities, valueKey, type DetectPiiOptions } from '@/lib/pdfPipeline'
+import { extractRegexEntities, isClaimed, valueKey, type DetectPiiOptions } from '@/lib/pdfPipeline'
 
 const OLLAMA_BASE = 'http://localhost:11434'
 const PROBE_TIMEOUT_MS = 2000
@@ -334,20 +334,20 @@ export async function detectPiiWithOllama(
   const total = pageTexts.length
   onProgress?.({ stage: 'scanning', done: 0, total, parallel: true })
 
-  const pageResults: { pageNum: number; entities: OllamaEntity[]; regexEntities: ReturnType<typeof extractRegexEntities> }[] = []
+  const pageResults: { pageNum: number; text: string; entities: OllamaEntity[]; regex: ReturnType<typeof extractRegexEntities> }[] = []
   for (let pageIdx = 0; pageIdx < total; pageIdx++) {
     signal?.throwIfAborted()
     const text = pageTexts[pageIdx]
     const entities = await runOllamaPage(model, text, signal)
-    pageResults.push({ pageNum: pageIdx + 1, entities, regexEntities: extractRegexEntities(text) })
+    pageResults.push({ pageNum: pageIdx + 1, text, entities, regex: extractRegexEntities(text) })
     onProgress?.({ stage: 'scanning', done: pageIdx + 1, total, parallel: true })
   }
 
   const seen = new Set<string>()
   const redactions: Redaction[] = []
 
-  for (const { pageNum, entities, regexEntities } of pageResults) {
-    for (const { type, value } of regexEntities) {
+  for (const { pageNum, text, entities, regex } of pageResults) {
+    for (const { type, value } of regex.entities) {
       const key = valueKey(value)
       if (seen.has(key)) continue
       seen.add(key)
@@ -357,11 +357,11 @@ export async function detectPiiWithOllama(
     for (const e of entities) {
       const type = ENTITY_LABELS[e.type] ?? e.type
       const value = e.value.trim()
-      if (!value) continue
+      if (!value || isClaimed(value, text, regex.claimed)) continue
       const key = valueKey(value)
       if (seen.has(key)) continue
       seen.add(key)
-      redactions.push({ id: crypto.randomUUID(), type, value, page: pageNum, approved: true })
+      redactions.push({ id: crypto.randomUUID(), type, value, page: pageNum, approved: type !== 'Miscellaneous' })
     }
   }
 

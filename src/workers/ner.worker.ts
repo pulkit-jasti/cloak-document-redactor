@@ -29,7 +29,7 @@ type InMsg =
   | { type: 'isCached'; id: number; modelId: string }
   | { type: 'remove'; id: number; modelId: string }
 
-export type NerEntity = { entity_group?: string; word: string }
+export type NerEntity = { entity_group?: string; word: string; score: number }
 
 const pipes = new Map<string, Promise<TokenClassificationPipeline>>()
 
@@ -85,7 +85,7 @@ async function runNer(modelId: string, chunks: string[]) {
   for (const chunk of chunks) {
     const output = await pipe(chunk, { aggregation_strategy: 'simple' })
     for (const r of Array.from(output as ArrayLike<(typeof output)[number]>)) {
-      results.push({ entity_group: 'entity_group' in r ? r.entity_group : undefined, word: r.word })
+      results.push({ entity_group: 'entity_group' in r ? r.entity_group : undefined, word: r.word, score: r.score })
     }
   }
   return results
