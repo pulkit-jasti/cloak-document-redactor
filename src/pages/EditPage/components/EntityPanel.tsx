@@ -22,6 +22,11 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
 
   const categories = new Map<string, EntityGroup[]>()
   for (const g of found) categories.set(g.type, [...(categories.get(g.type) ?? []), g])
+  const misc = categories.get('Miscellaneous')
+  if (misc) {
+    categories.delete('Miscellaneous')
+    categories.set('Miscellaneous', misc)
+  }
   const types = [...categories.keys()]
 
   const [open, setOpen] = useState<string[] | null>(null)

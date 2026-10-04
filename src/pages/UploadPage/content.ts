@@ -75,6 +75,10 @@ export const FAQS: { q: string; a: string }[] = [
     a: 'Yes. Cloak is free and open source. There is no account, no sign-up and no usage limit.',
   },
   {
+    q: 'Why is Cloak open source?',
+    a: 'I learned most of what I know from free tools, open source code and people who shared their knowledge without asking for anything back. Building free, open tools is my way of giving back. Cloak will always be free, and its code is open for anyone to read, learn from or improve.',
+  },
+  {
     q: 'Is my PDF uploaded anywhere?',
     a: 'No. Your PDF is read, scanned and redacted entirely inside your browser, so it never leaves your device. The only thing Cloak downloads is the detection model itself.',
   },

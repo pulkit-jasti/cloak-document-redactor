@@ -192,6 +192,12 @@ The tests need the dev server running, plus the model server (`npm run models`) 
 - **Desktop only.** The mobile screen also hides the landing page content from mobile crawlers.
 - **No leave-page warning yet.** Reloading or leaving `/preview` or `/edit` discards the document.
 
+## Why open source
+
+I learned most of what I know from free tools, open source code and people who shared their knowledge without asking for anything back. Building free, open tools is my way of giving back. Cloak will always be free, and its code is open for anyone to read, learn from or improve.
+
+For a privacy tool, open code also matters for trust: anyone can check that documents really never leave the browser.
+
 ## License
 
 [AGPL-3.0-or-later](LICENSE). Cloak bundles [MuPDF](https://mupdf.com/), which is also licensed under AGPL-3.0.
