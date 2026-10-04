@@ -74,7 +74,7 @@ function labeledId(labels: string) {
     })
 }
 
-const TITLED_NAME = /\b(?:Dr|Mr|Mrs|Ms|Judge|Justice|SA|Agent|Officer|Commander|Sergeant|Sgt|Det|Detective|Inspector|Counsel)\.?\s+([A-Z][a-zA-Z-]*(?:['’][A-Z][a-zA-Z-]+)?(?:\s+[A-Z]\.)?(?:\s+[A-Z][a-zA-Z-]*(?:['’][A-Z][a-zA-Z-]+)?){0,2})/g
+const TITLED_NAME = /\b(?:Dr|Mr|Mrs|Ms|Judge|Justice|SA|Agent|Officer|Commander|Sergeant|Sgt|Det|Detective|Inspector|Counsel)\.?[ \t]+([A-Z][a-zA-Z-]*(?:['’][A-Z][a-zA-Z-]+)?(?:[ \t]+[A-Z]\.)?(?:[ \t]+[A-Z][a-zA-Z-]*(?:['’][A-Z][a-zA-Z-]+)?)?)/g
 
 function findTitledNames(text: string): Span[] {
   return [...text.matchAll(TITLED_NAME)].map((m) => {
@@ -228,7 +228,11 @@ function isBirthDate(value: string, text: string): boolean {
 function snapToWords(word: string, text: string): string {
   const parts = word.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return ''
-  const match = new RegExp(parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*'), 'iu').exec(text)
+  const body = parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*')
+  const whole = `(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`
+  const exact = new RegExp(whole, 'u').exec(text) ?? new RegExp(whole, 'iu').exec(text)
+  if (exact) return exact[0]
+  const match = new RegExp(body, 'iu').exec(text)
   if (!match) return word.trim()
   let start = match.index
   let end = start + match[0].length
@@ -237,7 +241,16 @@ function snapToWords(word: string, text: string): string {
   return text.slice(start, end)
 }
 
-const NAME_SUFFIX = /^(jr|sr|ii|iii|iv|md|phd|esq)\.?$/i
+function cleanPersonValue(value: string): string {
+  const lines = value.split("\n").map((l) => l.trim()).filter(Boolean)
+  const wordCount = (l: string) => l.split(/\s+/).length
+  const longest = lines.reduce((best, l) => (wordCount(l) > wordCount(best) ? l : best), lines[0] ?? "")
+  const words = (wordCount(longest) > 1 ? longest : lines.join(" ")).split(/\s+/)
+  while (words.length > 1 && /^\p{Ll}/u.test(words[words.length - 1])) words.pop()
+  return words.join(" ")
+}
+
+const NAME_SUFFIX =/^(jr|sr|ii|iii|iv|md|phd|esq)\.?$/i
 
 export function spreadSurnames(redactions: Redaction[]): Redaction[] {
   const seen = new Set(redactions.map((r) => valueKey(r.value)))
@@ -322,8 +335,6 @@ export interface DetectPiiOptions {
   onProgress?: (progress: CloakProgress) => void
 }
 
-const COMBINE_WITH_MODEL: string = 'bert-base-ner'
-
 export async function detectPii(pageTexts: string[], options: DetectPiiOptions = {}): Promise<Redaction[]> {
   const { mode = 'ner', nerModel = DEFAULT_NER_MODEL_ID, ollamaModel, signal, onProgress } = options
 
@@ -355,7 +366,8 @@ export async function detectPii(pageTexts: string[], options: DetectPiiOptions =
       if (!group || group === 'MISC') continue
       const type = ENTITY_LABELS[group] ?? group
       if (r.score < (MIN_SCORE[type] ?? DEFAULT_MIN_SCORE)) continue
-      const value = snapToWords(r.word.replace(/^##/, ''), text)
+      const snapped = snapToWords(r.word.replace(/^##/, ''), text)
+      const value = type === 'Person' ? cleanPersonValue(snapped) : snapped
       if (!value || value.length < 3) continue
       if (/^\p{Ll}/u.test(value) || /^[A-Z]{2,4}$/.test(value)) continue
       if (type === 'Date' && !isBirthDate(value, text)) continue
@@ -384,13 +396,6 @@ export async function detectPii(pageTexts: string[], options: DetectPiiOptions =
     }
 
     if (MODEL_ENABLED) addNerResults(await runNer(nerModel, text), pageNum, text)
-  }
-
-  if (MODEL_ENABLED && COMBINE_WITH_MODEL && nerModel !== COMBINE_WITH_MODEL) {
-    for (let pageIdx = 0; pageIdx < pageTexts.length; pageIdx++) {
-      signal?.throwIfAborted()
-      addNerResults(await runNer(COMBINE_WITH_MODEL, pageTexts[pageIdx]), pageIdx + 1, pageTexts[pageIdx])
-    }
   }
 
   return spreadSurnames(redactions)

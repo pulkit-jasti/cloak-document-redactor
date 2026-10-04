@@ -7,7 +7,7 @@ import { DETECTIONS } from "../content"
 const LETTER = [
   "[Riverside Medical Group]",
   "Dear Dr. [Emily Chen],",
-  "I am referring my patient, [Marcus Hale], for a follow-up consultation. His Social Security number is [123-45-6789] and his insurer is [Northwind Health].",
+  "I am referring my patient, [Marcus Hale], for a follow-up consultation. His Social Security number is [123-45-6789] and his insurer is Northwind Health.",
   "Please contact him at [(503) 555-0187] or [marcus.hale@example.com]. He lives in [Portland, Oregon] and is available most weekdays.",
   "Sincerely,",
   "[Dr. Priya Raman]",

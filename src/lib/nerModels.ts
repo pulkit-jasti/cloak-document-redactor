@@ -21,6 +21,15 @@ export const NER_MODELS: NerModel[] = [
     dtype: 'q8',
   },
   {
+    id: 'pii-redactor-base',
+    repo: 'Horizon-Labs/pii-redactor-base',
+    name: 'PII Redactor Pro',
+    summary: '29 PII types, higher accuracy',
+    size: '~650 MB',
+    device: 'wasm',
+    dtype: 'q8',
+  },
+  {
     id: 'bert-base-ner',
     repo: 'Xenova/bert-base-NER',
     name: 'BERT Lite',

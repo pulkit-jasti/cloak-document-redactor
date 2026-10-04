@@ -1,6 +1,6 @@
 import {
   AtSign,
-  Building2,
+  CalendarDays,
   Cpu,
   Download,
   FileUp,
@@ -38,11 +38,11 @@ export const STEPS: Item[] = [
 
 export const DETECTIONS: { icon: LucideIcon; label: string }[] = [
   { icon: User, label: 'Names' },
-  { icon: Building2, label: 'Organizations' },
   { icon: MapPin, label: 'Locations' },
   { icon: AtSign, label: 'Email addresses' },
   { icon: Phone, label: 'Phone numbers' },
   { icon: Hash, label: 'Social Security numbers' },
+  { icon: CalendarDays, label: 'Dates of birth' },
 ]
 
 export const FEATURES: (Item & { href?: string })[] = [
@@ -84,7 +84,7 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What personal information (PII) can it find?',
-    a: 'Names, organizations, locations, email addresses, phone numbers and US Social Security numbers. You review every detection before downloading, so you stay in control.',
+    a: 'Names, locations, email addresses, phone numbers, dates of birth and US Social Security numbers. You review every detection before downloading, so you stay in control.',
   },
   {
     q: 'Is the redaction permanent?',

@@ -24,9 +24,6 @@
     { "value": "llion@google.com", "type": "email" },
     { "value": "aidan@cs.toronto.edu", "type": "email" },
     { "value": "lukaszkaiser@google.com", "type": "email" },
-    { "value": "illia.polosukhin@gmail.com", "type": "email" },
-    { "value": "Google Brain", "type": "organization" },
-    { "value": "Google Research", "type": "organization" },
-    { "value": "University of Toronto", "type": "organization" }
+    { "value": "illia.polosukhin@gmail.com", "type": "email" }
   ]
 }

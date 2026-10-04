@@ -83,12 +83,36 @@ async function runNer(modelId: string, chunks: string[]) {
   await unloadOthers(modelId)
   const results: NerEntity[] = []
   for (const chunk of chunks) {
-    const output = await pipe(chunk, { aggregation_strategy: 'simple' })
-    for (const r of Array.from(output as ArrayLike<(typeof output)[number]>)) {
-      results.push({ entity_group: 'entity_group' in r ? r.entity_group : undefined, word: r.word, score: r.score })
-    }
+    const tokens = (await pipe(chunk)) as unknown as RawToken[]
+    const ids = (pipe.tokenizer(chunk, { truncation: true }).input_ids.tolist() as number[][])[0]
+    results.push(...groupTokens(tokens, ids, (groupIds) => pipe.tokenizer.decode(groupIds, { skip_special_tokens: true })))
   }
   return results
+}
+
+type RawToken = { entity: string; score: number; index: number }
+
+function groupTokens(tokens: RawToken[], ids: number[], decode: (ids: number[]) => string): NerEntity[] {
+  const groups: { tag: string; indexes: number[]; scores: number[]; open: boolean }[] = []
+  for (const t of tokens) {
+    const prefix = t.entity[1] === '-' ? t.entity[0] : 'I'
+    const tag = t.entity[1] === '-' ? t.entity.slice(2) : t.entity
+    const last = groups[groups.length - 1]
+    const extend =
+      last && last.open && last.tag === tag && prefix !== 'B' && prefix !== 'S' && t.index === last.indexes[last.indexes.length - 1] + 1
+    if (extend) {
+      last.indexes.push(t.index)
+      last.scores.push(t.score)
+      if (prefix === 'E') last.open = false
+    } else {
+      groups.push({ tag, indexes: [t.index], scores: [t.score], open: prefix !== 'S' })
+    }
+  }
+  return groups.map((g) => ({
+    entity_group: g.tag,
+    word: decode(g.indexes.map((i) => ids[i])),
+    score: g.scores.reduce((a, b) => a + b, 0) / g.scores.length,
+  }))
 }
 
 async function removeModel(modelId: string) {

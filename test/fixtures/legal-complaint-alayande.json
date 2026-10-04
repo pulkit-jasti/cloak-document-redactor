@@ -34,18 +34,6 @@
     { "value": "ekundayoakanji.alayande", "type": "username" },
     { "value": "2017089345001", "type": "identifier" },
     { "value": "2017041120025", "type": "identifier" },
-    { "value": "20-2082", "type": "identifier" },
-    { "value": "X42883", "type": "account_number" },
-    { "value": "X9322", "type": "account_number" },
-    { "value": "X4785", "type": "account_number" },
-    { "value": "X6405", "type": "account_number" },
-    { "value": "X3526", "type": "account_number" },
-    { "value": "X7804", "type": "account_number" },
-    { "value": "X5022", "type": "account_number" },
-    { "value": "X7582", "type": "account_number" },
-    { "value": "X1017", "type": "account_number" },
-    { "value": "X9518", "type": "account_number" },
-    { "value": "X9526", "type": "account_number" },
-    { "value": "X4288", "type": "account_number" }
+    { "value": "20-2082", "type": "identifier" }
   ]
 }

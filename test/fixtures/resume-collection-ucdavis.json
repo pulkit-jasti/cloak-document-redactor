@@ -7,7 +7,6 @@
     { "value": "Davis, CA 95616", "type": "location" },
     { "value": "Sanger, CA", "type": "location" },
     { "value": "T & T Electronics", "type": "organization" },
-    { "value": "University of California, Davis", "type": "organization" },
 
     { "value": "Mohamed Singh", "type": "person" },
     { "value": "(408) 555-2256", "type": "phone" },
@@ -25,7 +24,6 @@
 
     { "value": "Grant Do", "type": "person" },
     { "value": "(408) 888-4623", "type": "phone" },
-    { "value": "gdo@ucdavis.edu", "type": "email" },
-    { "value": "United Nations", "type": "organization" }
+    { "value": "gdo@ucdavis.edu", "type": "email" }
   ]
 }

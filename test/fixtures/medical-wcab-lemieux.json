@@ -12,20 +12,11 @@
     { "value": "Chavira", "type": "person" },
     { "value": "Rodarte", "type": "person" },
     { "value": "Marsh", "type": "person" },
-    { "value": "Tobin Lucks", "type": "organization" },
     { "value": "K M Meat Company, Inc.", "type": "organization" },
-    { "value": "Starr Indemnity and Liability Company", "type": "organization" },
-    { "value": "Sedgwick", "type": "organization" },
-    { "value": "Leviton, Diaz & Ginocchio, Inc.", "type": "organization" },
-    { "value": "Dietz, Gilmor & Chazen, APC", "type": "organization" },
-    { "value": "Laughlin, Falbo, Levy & Moresi", "type": "organization" },
     { "value": "Los Angeles, California", "type": "location" },
     { "value": "Anaheim District Office", "type": "location" },
-    { "value": "$1,251.38", "type": "financial" },
     { "value": "ADJ11734603", "type": "identifier" },
     { "value": "KM Meat Company, Inc.", "type": "organization" },
-    { "value": "K M Meat Co., Inc", "type": "organization" },
-    { "value": "Starr Indemnity & Liability Company", "type": "organization" },
-    { "value": "Starr Indemnity & Liability Co", "type": "organization" }
+    { "value": "K M Meat Co., Inc", "type": "organization" }
   ]
 }
