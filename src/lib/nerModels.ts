@@ -6,7 +6,8 @@ export type NerModel = {
   size: string
   badge?: string
   device: 'wasm'
-  dtype: 'q8'
+  dtype: 'q8' | 'fp32'
+  minScore?: Record<string, number>
 }
 
 export const NER_MODELS: NerModel[] = [
@@ -19,24 +20,17 @@ export const NER_MODELS: NerModel[] = [
     badge: 'Recommended',
     device: 'wasm',
     dtype: 'q8',
+    minScore: { Person: 0.5, Organization: 0.9, Location: 0.9, default: 0.4 },
   },
   {
-    id: 'pii-redactor-base',
-    repo: 'Horizon-Labs/pii-redactor-base',
-    name: 'PII Redactor Pro',
-    summary: '29 PII types, higher accuracy',
-    size: '~650 MB',
+    id: 'gravitee-pii-small',
+    repo: 'gravitee-io/bert-small-pii-detection',
+    name: 'Gravitee PII Small',
+    summary: '26 PII types',
+    size: '~29 MB',
     device: 'wasm',
     dtype: 'q8',
-  },
-  {
-    id: 'bert-base-ner',
-    repo: 'Xenova/bert-base-NER',
-    name: 'BERT Lite',
-    summary: 'Names, orgs, places',
-    size: '~110 MB',
-    device: 'wasm',
-    dtype: 'q8',
+    minScore: { Person: 0.5, Organization: 0.75, Location: 0.75, default: 0.4 },
   },
 ]
 

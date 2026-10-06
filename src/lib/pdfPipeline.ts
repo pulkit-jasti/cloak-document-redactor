@@ -1,5 +1,5 @@
 import NERPipeline, { ModelStatus, type NerEntity } from "@/lib/nerPipeline"
-import { DEFAULT_NER_MODEL_ID } from "@/lib/nerModels"
+import { DEFAULT_NER_MODEL_ID, getNerModel } from "@/lib/nerModels"
 import type { PageStats, Redaction } from "@/types"
 import { findPhoneNumbersInText } from "libphonenumber-js"
 import isEmail from "validator/es/lib/isEmail"
@@ -9,10 +9,6 @@ import isIP from "validator/es/lib/isIP"
 import { strict as chrono } from "chrono-node"
 
 export const ENTITY_LABELS: Record<string, string> = {
-  PER: "Person",
-  ORG: "Organization",
-  LOC: "Location",
-  MISC: "Miscellaneous",
   PERSON: "Person",
   ORGANIZATION: "Organization",
   LOCATION: "Location",
@@ -42,7 +38,25 @@ export const ENTITY_LABELS: Record<string, string> = {
   IP_ADDRESS: "IP Address",
   MAC_ADDRESS: "MAC Address",
   DEVICE_ID: "Device ID",
+  EMAIL_ADDRESS: "Email",
+  PHONE_NUMBER: "Phone",
+  US_SSN: "SSN",
+  US_PASSPORT: "Passport",
+  US_DRIVER_LICENSE: "Driver License",
+  US_LICENSE_PLATE: "License Plate",
+  US_BANK_NUMBER: "Bank Account",
+  US_ITIN: "Tax ID",
+  IBAN_CODE: "IBAN",
+  IMEI: "Device ID",
+  DATE_TIME: "Date",
 }
+
+const DROPPED_GROUPS = new Set([
+  "TITLE",
+  "HONORIFIC",
+  "NRP",
+  "FINANCIAL",
+])
 
 const MIN_SCORE: Record<string, number> = {
   Person: 0.7,
@@ -50,6 +64,7 @@ const MIN_SCORE: Record<string, number> = {
   Location: 0.85,
 }
 const DEFAULT_MIN_SCORE = 0.6
+const NAMED_TYPES = new Set(["Person", "Organization", "Location"])
 
 type Span = [number, number]
 
@@ -360,16 +375,19 @@ export async function detectPii(pageTexts: string[], options: DetectPiiOptions =
 
   const claimedByPage: Span[][] = []
 
+  const minScore: Record<string, number> = { default: DEFAULT_MIN_SCORE, ...MIN_SCORE, ...getNerModel(nerModel).minScore }
+
   const addNerResults = (nerResults: NerEntity[], pageNum: number, text: string) => {
     for (const r of nerResults) {
       const group = r.entity_group
-      if (!group || group === 'MISC') continue
+      if (!group || DROPPED_GROUPS.has(group)) continue
       const type = ENTITY_LABELS[group] ?? group
-      if (r.score < (MIN_SCORE[type] ?? DEFAULT_MIN_SCORE)) continue
+      if (r.score < (minScore[type] ?? minScore.default)) continue
       const snapped = snapToWords(r.word.replace(/^##/, ''), text)
       const value = type === 'Person' ? cleanPersonValue(snapped) : snapped
       if (!value || value.length < 3) continue
-      if (/^\p{Ll}/u.test(value) || /^[A-Z]{2,4}$/.test(value)) continue
+      if (NAMED_TYPES.has(type) && /^\p{Ll}/u.test(value)) continue
+      if (/^[A-Z]{2,4}$/.test(value)) continue
       if (type === 'Date' && !isBirthDate(value, text)) continue
       if (isClaimed(value, text, claimedByPage[pageNum - 1])) continue
       if (/^(email|phone|ssn|name|address|company|location|manager|fax|date|id)$/i.test(value)) continue

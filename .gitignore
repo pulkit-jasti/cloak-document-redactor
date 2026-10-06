@@ -32,3 +32,5 @@ test_real_pii.pdf
 test/results/
 playwright-report/
 test-results/
+cutoff-tuning.md
+tsconfig.tsbuildinfo

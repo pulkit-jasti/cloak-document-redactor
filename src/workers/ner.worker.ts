@@ -42,14 +42,23 @@ function logDevInfo(modelId: string) {
   console.log(`[Cloak] ${modelId} ready: ${device} ${dtype}`)
 }
 
+function capTokenizerLength(pipe: TokenClassificationPipeline) {
+  const limit = (pipe.model.config as { max_position_embeddings?: number }).max_position_embeddings
+  const tokenizer = pipe.tokenizer as unknown as { model_max_length: number; _tokenizerConfig: { model_max_length?: number } }
+  if (limit && tokenizer.model_max_length > limit) tokenizer._tokenizerConfig.model_max_length = limit
+  return pipe
+}
+
 function loadPipeline(modelId: string) {
   const existing = pipes.get(modelId)
   if (existing) return existing
 
-  const pipePromise = pipeline(NER_TASK, modelPath(modelId), {
-    ...nerLoadOptions(modelId),
-    progress_callback: (event: ProgressInfo) => self.postMessage({ type: 'progress', modelId, event }),
-  }) as Promise<TokenClassificationPipeline>
+  const pipePromise = (
+    pipeline(NER_TASK, modelPath(modelId), {
+      ...nerLoadOptions(modelId),
+      progress_callback: (event: ProgressInfo) => self.postMessage({ type: 'progress', modelId, event }),
+    }) as Promise<TokenClassificationPipeline>
+  ).then(capTokenizerLength)
   pipes.set(modelId, pipePromise)
 
   pipePromise.then(
