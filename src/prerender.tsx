@@ -5,7 +5,6 @@ import { CloakProvider } from '@/context/CloakContext'
 import { OllamaProvider } from '@/context/OllamaContext'
 import { NerModelProvider } from '@/context/NerModelContext'
 import UploadPage from '@/pages/UploadPage'
-import Navbar from '@/components/Navbar'
 
 export async function prerender() {
   const html = renderToString(
@@ -14,7 +13,6 @@ export async function prerender() {
         <NerModelProvider>
           <StaticRouter location="/">
             <CloakProvider>
-              <Navbar />
               <UploadPage />
             </CloakProvider>
           </StaticRouter>

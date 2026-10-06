@@ -1,7 +1,6 @@
 import { Moon, Sun } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useCloak } from '@/context/CloakContext';
 import { Theme, useTheme } from '@/context/ThemeContext';
 import { LINKS } from '@/lib/links';
 import Logo from '@/assets/logo-main.svg?react';
@@ -14,7 +13,6 @@ type Props = {
 };
 
 export default function Navbar({ children, overHero = false, title }: Props) {
-	const { reset } = useCloak();
 	const { theme, toggleTheme } = useTheme();
 
 	return (
@@ -25,7 +23,6 @@ export default function Navbar({ children, overHero = false, title }: Props) {
 		>
 			<Link
 				to='/'
-				onClick={() => reset()}
 				aria-label='Cloak home'
 				aria-hidden={overHero || undefined}
 				tabIndex={overHero ? -1 : undefined}

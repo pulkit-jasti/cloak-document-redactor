@@ -5,6 +5,7 @@ import CtaButton from '@/components/CtaButton'
 import Navbar from '@/components/Navbar'
 import PdfViewer from '@/components/PdfViewer'
 import { useCloak } from '@/context/CloakContext'
+import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
 function redactedFileName(original: string | null) {
   const base = original?.replace(/\.pdf$/i, '').trim() || 'document'
@@ -14,6 +15,9 @@ function redactedFileName(original: string | null) {
 export default function PreviewPage() {
   const navigate = useNavigate()
   const { pdfBytes, fileName, redactedBytes, entities, cloakStats, reset } = useCloak()
+  const allowLeave = useLeaveGuard((next) =>
+    next.pathname === '/edit' ? null : 'Leave this page? Your redacted document will be lost.',
+  )
 
   const handleDownload = () => {
     const bytes = redactedBytes
@@ -28,6 +32,7 @@ export default function PreviewPage() {
   }
 
   const handleStartOver = () => {
+    allowLeave()
     reset()
     navigate('/')
   }

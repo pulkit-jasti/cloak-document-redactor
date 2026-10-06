@@ -17,6 +17,8 @@ import DropZone from "./DropZone"
 import FilePreview from "./FilePreview"
 import NoTextModal from "./NoTextModal"
 import PipelineErrorModal from "./PipelineErrorModal"
+import DesktopOnlyNotice from "./DesktopOnlyNotice"
+import { isMobileDevice } from "@/lib/device"
 import OllamaIcon from "@/assets/ollama.svg?react"
 
 const IS_DEV = import.meta.env.DEV
@@ -117,6 +119,8 @@ export default function UploadPanel() {
     abortRef.current?.abort()
     closeOverlay()
   }
+
+  if (isMobileDevice) return <DesktopOnlyNotice />
 
   return (
     <>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { CloakProvider } from '@/context/CloakContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { OllamaProvider } from '@/context/OllamaContext';
@@ -8,18 +8,12 @@ import { getSavedNerModelId } from '@/lib/nerModels';
 import UploadPage from '@/pages/UploadPage';
 import PreviewPage from '@/pages/PreviewPage';
 import EditPage from '@/pages/EditPage';
-import MobileGate from '@/components/MobileGate';
 import ModelLoadingIndicator from '@/components/ModelLoadingIndicator';
 import NERPipeline, {
 	ModelStatus,
 	type ProgressEvent,
 } from '@/lib/nerPipeline';
 import { useCloak } from '@/context/CloakContext';
-
-const isMobile = typeof navigator !== 'undefined' && (
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	((navigator as any).userAgentData?.mobile ?? /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent))
-);
 
 function RequirePdf({ children }: { children: React.ReactNode }) {
 	const { pdfUrl } = useCloak();
@@ -34,6 +28,13 @@ function UnknownRoute() {
 	}, [reset]);
 	return <Navigate to='/' replace />;
 }
+
+const router = createBrowserRouter([
+	{ path: '/', element: <UploadPage /> },
+	{ path: '/preview', element: <RequirePdf><PreviewPage /></RequirePdf> },
+	{ path: '/edit', element: <RequirePdf><EditPage /></RequirePdf> },
+	{ path: '*', element: <UnknownRoute /> },
+]);
 
 export default function App() {
 	const [modelStatus, setModelStatus] = useState<ModelStatus>(ModelStatus.Idle);
@@ -55,23 +56,14 @@ export default function App() {
 			});
 	}
 
-	if (isMobile) return <MobileGate />;
-
 	return (
 		<ThemeProvider>
 			<OllamaProvider>
 			<NerModelProvider>
-			<BrowserRouter>
-				<CloakProvider>
-					<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} onLoad={loadModel} />
-					<Routes>
-						<Route path='/' element={<UploadPage />} />
-						<Route path='/preview' element={<RequirePdf><PreviewPage /></RequirePdf>} />
-						<Route path='/edit' element={<RequirePdf><EditPage /></RequirePdf>} />
-						<Route path='*' element={<UnknownRoute />} />
-					</Routes>
-				</CloakProvider>
-			</BrowserRouter>
+			<CloakProvider>
+				<ModelLoadingIndicator status={modelStatus} lastEvent={lastEvent} onLoad={loadModel} />
+				<RouterProvider router={router} />
+			</CloakProvider>
 			</NerModelProvider>
 			</OllamaProvider>
 		</ThemeProvider>

@@ -4,6 +4,7 @@ import type { Redaction } from '@/types';
 import Navbar from '@/components/Navbar';
 import PdfViewer, { type MatchSummary } from '@/components/PdfViewer';
 import { useCloak } from '@/context/CloakContext';
+import { useLeaveGuard } from '@/hooks/useLeaveGuard';
 import { redactPdf } from '@/lib/redactPdf';
 import EntityPanel from './components/EntityPanel';
 import { groupRedactions, groupKey } from './groupRedactions';
@@ -26,6 +27,14 @@ export default function EditPage() {
 		[groups],
 	);
 
+	const hasUnappliedChanges = redactions.some((r, i) => r.approved !== entities?.[i]?.approved);
+	const allowLeave = useLeaveGuard((next) => {
+		if (next.pathname === '/preview') {
+			return hasUnappliedChanges ? "Discard your changes? You have changes you haven't applied yet." : null;
+		}
+		return 'Leave this page? Your redacted document and any changes will be lost.';
+	});
+
 	const handleMatches = useCallback(
 		(summary: MatchSummary, complete: boolean) => setMatches({ summary, complete }),
 		[],
@@ -46,6 +55,7 @@ export default function EditPage() {
 			const approvedEntities = groups.filter((g) => g.approved).map((g) => g.value);
 			const redacted = await redactPdf(pdfBytes, approvedEntities);
 			setRedactedBytes(redacted);
+			allowLeave();
 			navigate('/preview');
 		} catch (err) {
 			console.error('[EditPage] redaction error:', err);

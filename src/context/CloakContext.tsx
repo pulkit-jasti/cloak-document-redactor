@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react"
 import type { Redaction } from "@/types"
 
 export type { Redaction }
@@ -42,7 +42,7 @@ export function CloakProvider({ children }: { children: React.ReactNode }) {
     setRedactedBytes(null)
   }
 
-  const reset = () => {
+  const reset = useCallback(() => {
     if (blobUrlRef.current) {
       URL.revokeObjectURL(blobUrlRef.current)
       blobUrlRef.current = null
@@ -53,7 +53,7 @@ export function CloakProvider({ children }: { children: React.ReactNode }) {
     setRedactedBytes(null)
     setEntities(null)
     setCloakStats(null)
-  }
+  }, [])
 
   return (
     <CloakContext.Provider value={{ pdfUrl, pdfBytes, fileName, redactedBytes, entities, cloakStats, setCloakStats, setPdf, setEntities, setRedactedBytes, reset }}>

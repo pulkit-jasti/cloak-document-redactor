@@ -35,7 +35,6 @@ export default function EntityCard({ group: g, match, onSetApproved }: Props) {
           Redact
           <Checkbox
             id={checkboxId}
-            className='rounded-[4px]'
             checked={g.approved}
             onCheckedChange={(c) => onSetApproved([g.key], c === true)}
           />

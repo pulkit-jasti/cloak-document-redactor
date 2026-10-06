@@ -23,7 +23,7 @@ export default function Footer() {
               {LINKS.author.name}
             </a>
           </p>
-          <div className="flex items-center gap-5 text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-muted-foreground md:justify-end">
             <a
               href={LINKS.repo}
               target="_blank"
@@ -41,7 +41,7 @@ export default function Footer() {
             >
               AGPL-3.0 License
             </a>
-            <span>© {new Date().getFullYear()} {LINKS.author.name}</span>
+            <span className="whitespace-nowrap">© {new Date().getFullYear()} {LINKS.author.name}</span>
           </div>
         </div>
       </div>
