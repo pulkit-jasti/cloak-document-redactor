@@ -18,6 +18,26 @@ type WorkerInMsg     = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg | Extract
 
 let doc: MupdfDocument | null = null
 
+function flattenForms(mupdf: typeof import('mupdf'), pdfDoc: MupdfDocument) {
+  if (!(pdfDoc instanceof mupdf.PDFDocument)) return
+  pdfDoc.bake(false, true)
+  const pageCount = pdfDoc.countPages()
+  for (let i = 0; i < pageCount; i++) {
+    const page = pdfDoc.loadPage(i)
+    for (const annot of page.getAnnotations()) page.deleteAnnotation(annot)
+    page.destroy()
+  }
+  pdfDoc.getTrailer().get('Root').delete('AcroForm')
+}
+
+function stripMetadata(pdfDoc: PDFDocument) {
+  const trailer = pdfDoc.getTrailer()
+  trailer.delete('Info')
+  const root = trailer.get('Root')
+  root.delete('Metadata')
+  root.delete('Outlines')
+}
+
 const MIN_TEXT_CHARS = 20
 
 type StextBlock = {
@@ -154,6 +174,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
     if (msg.type === 'load') {
       doc?.destroy()
       doc = mupdf.Document.openDocument(msg.bytes, 'application/pdf')
+      flattenForms(mupdf, doc)
       const pageCount = doc.countPages()
       const pageSizes: Array<[number, number]> = []
       const pageStats: PageStats[] = []
@@ -198,6 +219,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
     } else if (msg.type === 'redact') {
       // Open a fresh copy of the document so we don't mutate the viewer's doc
       const pdfDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf') as PDFDocument
+      flattenForms(mupdf, pdfDoc)
       const pageCount = pdfDoc.countPages()
 
       for (let i = 0; i < pageCount; i++) {
@@ -219,7 +241,8 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
         page.destroy()
       }
 
-      const buffer = pdfDoc.saveToBuffer('garbage=compact')
+      stripMetadata(pdfDoc)
+      const buffer = pdfDoc.saveToBuffer('garbage=compact,regenerate-id')
       const output = buffer.asUint8Array().slice() // copy before destroy
       buffer.destroy()
       pdfDoc.destroy()
@@ -231,6 +254,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
 
     } else if (msg.type === 'extractText') {
       const extractDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf')
+      flattenForms(mupdf, extractDoc)
       const pageCount = extractDoc.countPages()
       const pageTexts: string[] = []
       const pageStats: PageStats[] = []

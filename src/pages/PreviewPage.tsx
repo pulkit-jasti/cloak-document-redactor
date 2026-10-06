@@ -7,11 +7,6 @@ import PdfViewer from '@/components/PdfViewer'
 import { useCloak } from '@/context/CloakContext'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
-function redactedFileName(original: string | null) {
-  const base = original?.replace(/\.pdf$/i, '').trim() || 'document'
-  return `${base}_redacted.pdf`
-}
-
 export default function PreviewPage() {
   const navigate = useNavigate()
   const { pdfBytes, fileName, redactedBytes, entities, cloakStats, reset } = useCloak()
@@ -26,7 +21,7 @@ export default function PreviewPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = redactedFileName(fileName)
+    a.download = 'redacted-document.pdf'
     a.click()
     URL.revokeObjectURL(url)
   }
