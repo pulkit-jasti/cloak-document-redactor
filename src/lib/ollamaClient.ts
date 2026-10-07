@@ -3,9 +3,9 @@ import { extractRegexEntities, isClaimed, valueKey, type DetectPiiOptions } from
 
 const OLLAMA_BASE = 'http://localhost:11434'
 const PROBE_TIMEOUT_MS = 2000
-const PAGE_TIMEOUT_MS = 60_000
+const PAGE_TIMEOUT_MS = 180_000
 const MAX_PAGE_CHARS = 20_000
-const MODEL_OPTIONS = { num_ctx: 8192, num_predict: 2048, temperature: 0.2 }
+const MODEL_OPTIONS = { num_ctx: 8192, num_predict: 4096, temperature: 0.2 }
 const MAX_CONSECUTIVE_REPEATS = 3
 const MAX_TOTAL_REPEATS = 6
 
@@ -110,27 +110,23 @@ const ENTITY_LABELS: Record<string, string> = {
   Miscellaneous: 'Miscellaneous',
 }
 
-const PROMPT_TEMPLATE = `You are a privacy redaction assistant. Extract all PII from the text below.
+const PROMPT_TEMPLATE = `You are a privacy redaction assistant. Find the personal details in the text below that identify specific private individuals.
 
-Return ONLY a JSON array. Each element: { "type": one of "Person"|"Organization"|"Location"|"Miscellaneous", "value": the PII value only }
+Return ONLY a JSON array. Each element: { "type": one of "Person"|"Organization"|"Location"|"Miscellaneous", "value": the exact text }
 
-- Person: full names, first names referring to a specific individual
-- Organization: companies, institutions, agencies
-- Location: addresses, cities, countries, landmarks
-- Miscellaneous: ONLY identifiers tied to one specific person: email addresses, phone numbers, account numbers, ID/SSN/passport/license numbers, dates of birth, license plates, personal URLs
+- Person: names of specific people, including full names, single first names or surnames that refer to a specific person, aliases, and people named in cited court cases
+- Organization: ONLY organizations tied to a specific person, such as their employer, school, bank, or law firm. Never courts, government agencies, legislatures, or other public institutions
+- Location: ONLY street addresses and cities or towns tied to where a specific person lives or works. Never countries, states, or places mentioned in general
+- Miscellaneous: ONLY personal account or reference numbers that are not in a standard format, such as masked account numbers (e.g. "X4288")
 
-Never return as Miscellaneous: GPAs or scores, degrees, majors, course names, skills, software, programming languages, spoken languages, certifications, job titles, or general website URLs
+Do NOT return any of these, they are handled separately: email addresses, phone numbers, Social Security numbers, credit card numbers, IBANs, IP addresses, passport or visa numbers, case numbers, license plates, dates of any kind including dates of birth, medical conditions, or medications
 
 Rules:
-- "value" must be the PII itself only, never include the label or field name (e.g. for "Name: John Smith" return "John Smith", not "Name: John Smith")
+- "value" must be the detail itself only, never the label or field name (e.g. for "Name: John Smith" return "John Smith", not "Name: John Smith")
 - Copy each value exactly as it appears in the text, character for character
-- One entity per item: never merge two entities into one value, and never add extra context such as a city after an organization name
-- No generic words/job titles
-- Never return dates under any type: no months, years, month-year pairs (e.g. "June 2027"), numeric dates (e.g. "9/2023"), or date ranges (e.g. "9/2023 – 6/2024", "2019 - present"). The only exception is a date explicitly labeled as a date of birth
-- Return [] if none found
-
-Text:
-`
+- One entity per item: never merge two entities into one value
+- Never return job titles, roles (e.g. "Plaintiff", "Defendant", "Judge"), or generic words
+- Return [] if none found`
 
 type OllamaEntity = { type: string; value: string }
 
@@ -205,7 +201,8 @@ function rejectReason(e: OllamaEntity, text: string, orgValues: string[]): strin
   if (!/\p{L}/u.test(e.value)) return 'no letters'
   if (e.value === e.value.toLowerCase()) return 'all lowercase'
   if (e.type === 'Person') {
-    if (words.length < 2 || words.length > 4) return 'person must be 2-4 words'
+    if (words.length > 4) return 'person longer than 4 words'
+    if (words.length === 1 && e.value.length < 3) return 'single-word person too short'
     if (/\d/.test(e.value)) return 'person contains digits'
     const lower = e.value.toLowerCase()
     if (orgValues.some((org) => org.includes(lower))) return 'part of an organization name'
@@ -249,7 +246,10 @@ async function runOllamaPage(model: string, text: string, signal?: AbortSignal):
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'user', content: PROMPT_TEMPLATE + text }],
+        messages: [
+          { role: 'system', content: PROMPT_TEMPLATE },
+          { role: 'user', content: text },
+        ],
         format: {
           type: 'array',
           items: {
@@ -262,7 +262,7 @@ async function runOllamaPage(model: string, text: string, signal?: AbortSignal):
           },
         },
         stream: true,
-        think: false,
+        think: model.startsWith('gpt-oss') ? 'low' : false,
         options: MODEL_OPTIONS,
       }),
     })

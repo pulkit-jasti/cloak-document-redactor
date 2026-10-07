@@ -4,7 +4,7 @@ import os from 'os'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { extractText } from './helpers/extractText'
-import { testSet } from './helpers/model'
+import { isOllamaTest, testModel, testSet } from './helpers/model'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const FIXTURES_DIR = path.resolve(__dirname, '../fixtures')
@@ -32,6 +32,8 @@ const SETS: Record<string, string[]> = {
   ],
 }
 const fixtureFiles = SETS[testSet()]
+const OLLAMA = isOllamaTest()
+const OLLAMA_MODEL = testModel().slice('ollama:'.length)
 
 interface FixtureItem {
   value: string
@@ -58,13 +60,29 @@ test.describe('PII detection report', () => {
       )
       const pdfPath = path.join(PDFS_DIR, fixture.source)
       const jsErrors: string[] = []
+      const consoleLines: string[] = []
       page.on('pageerror', (err) => jsErrors.push(err.message))
+      page.on('console', (msg) => consoleLines.push(msg.text()))
+      if (OLLAMA) test.setTimeout(3_600_000)
 
       await page.goto('/')
+      if (OLLAMA) {
+        await page.waitForFunction(
+          (model) => (window as Window & { __cloakOllamaModel?: string | null }).__cloakOllamaModel === model,
+          OLLAMA_MODEL,
+          { timeout: 60_000 },
+        )
+      }
       await page.locator('#file-input').setInputFiles(pdfPath)
       await page.getByText('Cloak it').click()
-      await page.waitForURL('**/preview', { timeout: 240_000 })
+      await page.waitForURL('**/preview', { timeout: OLLAMA ? 3_300_000 : 240_000 })
+      const modelUsed = consoleLines.find((l) => l.startsWith('[Cloak] Cloaked in'))?.split('| model: ')[1]?.split(' |')[0] ?? null
 
+      await page.waitForFunction(
+        () => Array.isArray((window as Window & { __cloakEntities?: unknown }).__cloakEntities),
+        null,
+        { timeout: 30_000 },
+      )
       const entities = await page.evaluate(
         () => (window as Window & { __cloakEntities?: { value: string; approved: boolean }[] }).__cloakEntities ?? []
       )
@@ -116,6 +134,9 @@ test.describe('PII detection report', () => {
             catch_rate,
             detected_count: detected.length,
             false_positives,
+            model_used: modelUsed,
+            fell_back: modelUsed?.includes('fallback from') ?? false,
+            incomplete_pages: consoleLines.filter((l) => l.includes('[Ollama] page stopped early')).length,
             false_positive_rate,
             errors: jsErrors,
           })

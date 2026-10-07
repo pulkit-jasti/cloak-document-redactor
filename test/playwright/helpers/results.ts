@@ -14,6 +14,9 @@ export interface PdfResult {
   detected_count: number
   false_positives: string[]
   false_positive_rate: number
+  model_used?: string | null
+  fell_back?: boolean
+  incomplete_pages?: number
   errors: string[]
   duration_ms: number
 }

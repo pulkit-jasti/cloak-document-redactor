@@ -41,6 +41,10 @@ export function OllamaProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { void (async () => { await probe() })() }, [probe])
 
+  useEffect(() => {
+    if (import.meta.env.DEV) (window as Window & { __cloakOllamaModel?: string | null }).__cloakOllamaModel = selectedModel
+  }, [selectedModel])
+
   const setSelectedModel = useCallback((m: string | null) => {
     setSelectedModelState(m)
     if (m) localStorage.setItem(STORAGE_KEY, m)
