@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ScanText } from 'lucide-react'
 import CtaButton from '@/components/CtaButton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { PdfImage, PdfLink } from '@/types'
@@ -7,6 +8,7 @@ import type { EntityGroup } from '../groupRedactions'
 import EntityCard from './EntityCard'
 import ImagesTab from './ImagesTab'
 import CategorySection from './CategorySection'
+import EmptyState from './EmptyState'
 import LinkCard from './LinkCard'
 
 interface Props {
@@ -65,12 +67,11 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
         {groups.length > 0 && !matchesComplete ? (
           <p className='px-1 py-12 text-center text-sm text-muted-foreground'>Finding matches in your document…</p>
         ) : found.length === 0 && !hasLinks ? (
-          <div className='flex flex-col items-center justify-center h-full gap-2 text-center px-4 py-12'>
-            <p className='text-sm font-medium'>Nothing personal found</p>
-            <p className='text-xs text-muted-foreground'>
-              This document looks clean.
-            </p>
-          </div>
+          <EmptyState
+            icon={ScanText}
+            title='No personal details found'
+            description="Cloak didn't find any personal info in this document's text."
+          />
         ) : (
           <>
             <div className='mb-3 flex justify-end'>

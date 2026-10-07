@@ -1,6 +1,8 @@
 import { useId } from 'react'
+import { ImageOff } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { PdfImage } from '@/types'
+import EmptyState from './EmptyState'
 
 interface Props {
   images: PdfImage[] | null
@@ -122,10 +124,11 @@ export default function ImagesTab({ images, removedIds, onSetRemoved }: Props) {
   }
   if (images.length === 0) {
     return (
-      <div className='flex flex-col items-center justify-center gap-2 px-4 py-12 text-center'>
-        <p className='text-sm font-medium'>No images found</p>
-        <p className='text-xs text-muted-foreground'>This document has no images worth reviewing.</p>
-      </div>
+      <EmptyState
+        icon={ImageOff}
+        title='No images to review'
+        description='This document has no photos or standalone pictures to remove.'
+      />
     )
   }
 

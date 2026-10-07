@@ -13,7 +13,7 @@ import { groupRedactions, groupKey } from './groupRedactions';
 
 export default function EditPage() {
 	const navigate = useNavigate();
-	const { pdfBytes, fileName, entities, setEntities, setRedactedBytes, removedImageIds, setRemovedImageIds, keptLinkUrls, setKeptLinkUrls } =
+	const { pdfBytes, fileName, entities, setEntities, setRedactedBytes, setRemovedItems, setHasReviewables, removedImageIds, setRemovedImageIds, keptLinkUrls, setKeptLinkUrls } =
 		useCloak();
 
 	const [redactions, setRedactions] = useState<Redaction[]>(entities ?? []);
@@ -117,7 +117,9 @@ export default function EditPage() {
 				imageIds: removedImages,
 				keepLinks: keptLinks,
 			});
-			setRedactedBytes(redacted);
+			setRedactedBytes(redacted.bytes);
+			setRemovedItems(redacted.removed);
+			setHasReviewables(redacted.reviewable);
 			allowLeave();
 			navigate('/preview');
 		} catch (err) {

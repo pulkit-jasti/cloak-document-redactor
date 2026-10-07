@@ -26,7 +26,7 @@ const OVERLAY_EXIT_MS = 450
 
 export default function UploadPanel() {
   const navigate = useNavigate()
-  const { setPdf, setEntities, setRedactedBytes, setCloakStats } = useCloak()
+  const { setPdf, setEntities, setRedactedBytes, setRemovedItems, setHasReviewables, setCloakStats } = useCloak()
   const { status, selectedModel } = useOllama()
   const { selectedId: nerModelId } = useNerModel()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -104,7 +104,9 @@ export default function UploadPanel() {
 
       setPdf(url, bytes, selectedFile.name)
       setEntities(redactions)
-      setRedactedBytes(redacted)
+      setRedactedBytes(redacted.bytes)
+      setRemovedItems(redacted.removed)
+      setHasReviewables(redacted.reviewable)
       setCloakStats({ seconds, pages: pageTexts.length })
       navigate("/preview")
     } catch (err) {

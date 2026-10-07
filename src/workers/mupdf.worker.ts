@@ -20,20 +20,32 @@ type WorkerInMsg     = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg | Extract
 
 let doc: MupdfDocument | null = null
 
-function flattenForms(mupdf: typeof import('mupdf'), pdfDoc: MupdfDocument) {
-  if (!(pdfDoc instanceof mupdf.PDFDocument)) return
+type FlattenReport = { comments: boolean; forms: boolean; attachments: boolean }
+
+function flattenForms(mupdf: typeof import('mupdf'), pdfDoc: MupdfDocument): FlattenReport {
+  const report: FlattenReport = { comments: false, forms: false, attachments: false }
+  if (!(pdfDoc instanceof mupdf.PDFDocument)) return report
+  const acroForm = pdfDoc.getTrailer().get('Root').get('AcroForm')
+  const fields = acroForm.isNull() ? null : acroForm.get('Fields')
+  if (fields && !fields.isNull() && fields.length > 0) report.forms = true
   pdfDoc.bake(false, true)
   const pageCount = pdfDoc.countPages()
   for (let i = 0; i < pageCount; i++) {
     const page = pdfDoc.loadPage(i)
     let remaining = page.getAnnotations().length
     while (remaining > 0) {
-      page.deleteAnnotation(page.getAnnotations()[0])
+      const annot = page.getAnnotations()[0]
+      const type = annot.getType()
+      if (type === 'Widget') report.forms = true
+      else if (type === 'FileAttachment') report.attachments = true
+      else report.comments = true
+      page.deleteAnnotation(annot)
       remaining--
     }
     page.destroy()
   }
   pdfDoc.getTrailer().get('Root').delete('AcroForm')
+  return report
 }
 
 const MIN_IMAGE_SIZE = 40
@@ -118,6 +130,23 @@ function collectImages(mupdf: typeof import('mupdf'), page: PDFPage, withThumbs:
   return images
 }
 
+function reviewableImages(found: PageImage[]) {
+  const scannedPage = found.some((img) => img.coversPage && img.textLayer)
+  return scannedPage ? [] : found.filter((img) => img.big)
+}
+
+function hasReviewableContent(mupdf: typeof import('mupdf'), pdfDoc: PDFDocument) {
+  const pageCount = pdfDoc.countPages()
+  for (let i = 0; i < pageCount; i++) {
+    const page = pdfDoc.loadPage(i) as PDFPage
+    const found = reviewableImages(collectImages(mupdf, page, false)).length > 0
+    const linked = page.getLinks().some((link) => link.isExternal())
+    page.destroy()
+    if (found || linked) return true
+  }
+  return false
+}
+
 const ICC_SIGNATURE = 'ICC_PROFILE\0'
 
 function isIccSegment(data: Uint8Array, start: number) {
@@ -194,7 +223,8 @@ function singleFilter(image: import('mupdf').PDFObject) {
   return null
 }
 
-function stripImageMetadata(pdfDoc: PDFDocument) {
+function stripImageMetadata(pdfDoc: PDFDocument): boolean {
+  let removed = false
   const count = pdfDoc.countObjects()
   for (let i = 1; i < count; i++) {
     try {
@@ -202,18 +232,25 @@ function stripImageMetadata(pdfDoc: PDFDocument) {
       if (!obj.isStream()) continue
       const subtype = obj.get('Subtype')
       if (subtype.isNull() || subtype.asName() !== 'Image') continue
-      obj.delete('Metadata')
+      if (!obj.get('Metadata').isNull()) {
+        obj.delete('Metadata')
+        removed = true
+      }
       const filter = singleFilter(obj)
       const strip = filter === 'DCTDecode' ? stripJpegMetadata : filter === 'JPXDecode' ? stripJp2Metadata : null
       if (!strip) continue
       const raw = obj.readRawStream()
       const stripped = strip(raw.asUint8Array())
       raw.destroy()
-      if (stripped) obj.writeRawStream(stripped)
+      if (stripped) {
+        obj.writeRawStream(stripped)
+        removed = true
+      }
     } catch {
       continue
     }
   }
+  return removed
 }
 
 const HIDDEN_DATA_KEYS = ['Alt', 'ActualText', 'Thumb', 'PieceInfo', 'Metadata', 'AF', 'AA']
@@ -234,18 +271,24 @@ function stripHiddenObjectData(pdfDoc: PDFDocument) {
 
 function stripMetadata(pdfDoc: PDFDocument) {
   const trailer = pdfDoc.getTrailer()
-  trailer.delete('Info')
   const root = trailer.get('Root')
+  const names = root.get('Names')
+  const report = {
+    properties: !trailer.get('Info').isNull() || !root.get('Metadata').isNull(),
+    bookmarks: !root.get('Outlines').isNull(),
+    attachments: Object.keys(pdfDoc.getEmbeddedFiles()).length > 0 || !root.get('Collection').isNull(),
+  }
+  trailer.delete('Info')
   root.delete('Metadata')
   root.delete('Outlines')
   root.delete('Collection')
-  const names = root.get('Names')
   if (!names.isNull()) {
     names.delete('EmbeddedFiles')
     names.delete('JavaScript')
   }
   const openAction = root.get('OpenAction')
   if (openAction.isDictionary()) root.delete('OpenAction')
+  return report
 }
 
 function removeExternalLinks(page: PDFPage, keep: Set<string>) {
@@ -444,10 +487,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
       const images: Array<{ page: number; index: number; fullPage: boolean; thumb: Uint8Array | null }> = []
       for (let i = 0; i < pageCount; i++) {
         const page = imgDoc.loadPage(i) as PDFPage
-        const found = collectImages(mupdf, page, true)
-        const scannedPage = found.some((img) => img.coversPage && img.textLayer)
-        for (const img of found) {
-          if (!img.big || scannedPage) continue
+        for (const img of reviewableImages(collectImages(mupdf, page, true))) {
           images.push({ page: i + 1, index: img.index, fullPage: img.fullPage, thumb: img.thumb })
         }
         page.destroy()
@@ -478,7 +518,8 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
     } else if (msg.type === 'redact') {
       // Open a fresh copy of the document so we don't mutate the viewer's doc
       const pdfDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf') as PDFDocument
-      flattenForms(mupdf, pdfDoc)
+      const flattened = flattenForms(mupdf, pdfDoc)
+      const reviewable = hasReviewableContent(mupdf, pdfDoc)
       const pageCount = pdfDoc.countPages()
       const imagesByPage = new Map<number, Set<number>>()
       for (const id of msg.imageIds) {
@@ -530,16 +571,24 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
       if (pagesToDelete.length >= pageCount) throw new Error('Cannot remove every page')
       for (const i of pagesToDelete.sort((a, b) => b - a)) pdfDoc.deletePage(i)
 
-      stripMetadata(pdfDoc)
-      stripImageMetadata(pdfDoc)
+      const metadata = stripMetadata(pdfDoc)
+      const imageMetadata = stripImageMetadata(pdfDoc)
       stripHiddenObjectData(pdfDoc)
+      const removed = [
+        metadata.properties && 'file properties',
+        imageMetadata && 'image metadata',
+        metadata.bookmarks && 'bookmarks',
+        flattened.comments && 'comments',
+        (metadata.attachments || flattened.attachments) && 'attachments',
+        flattened.forms && 'form data',
+      ].filter((item): item is string => typeof item === 'string')
       const buffer = pdfDoc.saveToBuffer('garbage=compact,regenerate-id')
       const output = buffer.asUint8Array().slice() // copy before destroy
       buffer.destroy()
       pdfDoc.destroy()
 
       self.postMessage(
-        { id: msg.id, type: 'redacted', bytes: output },
+        { id: msg.id, type: 'redacted', bytes: output, removed, reviewable },
         { transfer: [output.buffer as ArrayBuffer] },
       )
 

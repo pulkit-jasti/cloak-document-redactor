@@ -10,6 +10,8 @@ interface CloakContextValue {
   pdfBytes: Uint8Array | null
   fileName: string | null
   redactedBytes: Uint8Array | null
+  removedItems: string[]
+  hasReviewables: boolean
   entities: Redaction[] | null
   removedImageIds: string[]
   keptLinkUrls: string[]
@@ -20,6 +22,8 @@ interface CloakContextValue {
   setRemovedImageIds: (ids: string[]) => void
   setKeptLinkUrls: (urls: string[]) => void
   setRedactedBytes: (bytes: Uint8Array | null) => void
+  setRemovedItems: (items: string[]) => void
+  setHasReviewables: (value: boolean) => void
   reset: () => void
 }
 
@@ -30,6 +34,8 @@ export function CloakProvider({ children }: { children: React.ReactNode }) {
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [redactedBytes, setRedactedBytes] = useState<Uint8Array | null>(null)
+  const [removedItems, setRemovedItems] = useState<string[]>([])
+  const [hasReviewables, setHasReviewables] = useState(false)
   const [entities, setEntities] = useState<Redaction[] | null>(null)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
   const [keptLinkUrls, setKeptLinkUrls] = useState<string[]>([])
@@ -46,6 +52,8 @@ export function CloakProvider({ children }: { children: React.ReactNode }) {
     setPdfBytes(bytes)
     setFileName(name)
     setRedactedBytes(null)
+    setRemovedItems([])
+    setHasReviewables(false)
     setRemovedImageIds([])
     setKeptLinkUrls([])
   }
@@ -59,6 +67,8 @@ export function CloakProvider({ children }: { children: React.ReactNode }) {
     setPdfBytes(null)
     setFileName(null)
     setRedactedBytes(null)
+    setRemovedItems([])
+    setHasReviewables(false)
     setEntities(null)
     setRemovedImageIds([])
     setKeptLinkUrls([])
@@ -66,7 +76,7 @@ export function CloakProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <CloakContext.Provider value={{ pdfUrl, pdfBytes, fileName, redactedBytes, entities, removedImageIds, keptLinkUrls, cloakStats, setCloakStats, setPdf, setEntities, setRemovedImageIds, setKeptLinkUrls, setRedactedBytes, reset }}>
+    <CloakContext.Provider value={{ pdfUrl, pdfBytes, fileName, redactedBytes, removedItems, hasReviewables, entities, removedImageIds, keptLinkUrls, cloakStats, setCloakStats, setPdf, setEntities, setRemovedImageIds, setKeptLinkUrls, setRedactedBytes, setRemovedItems, setHasReviewables, reset }}>
       {children}
     </CloakContext.Provider>
   )

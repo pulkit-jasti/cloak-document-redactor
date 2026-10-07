@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Download, PenLine, RotateCcw } from 'lucide-react'
+import { Download, PenLine, RotateCcw, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import CtaButton from '@/components/CtaButton'
 import Navbar from '@/components/Navbar'
@@ -7,9 +7,19 @@ import PdfViewer from '@/components/PdfViewer'
 import { useCloak } from '@/context/CloakContext'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
+function formatList(items: string[]) {
+  if (items.length < 2) return items.join('')
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+}
+
+function summarize(noPii: boolean, removed: string[]) {
+  if (removed.length > 0) return `Removed: ${formatList(removed)}.`
+  return noPii ? 'No personal details found.' : null
+}
+
 export default function PreviewPage() {
   const navigate = useNavigate()
-  const { pdfBytes, fileName, redactedBytes, entities, cloakStats, reset } = useCloak()
+  const { pdfBytes, fileName, redactedBytes, removedItems, hasReviewables, entities, cloakStats, reset } = useCloak()
   const allowLeave = useLeaveGuard((next) =>
     next.pathname === '/edit' ? null : 'Leave this page? Your redacted document will be lost.',
   )
@@ -33,6 +43,8 @@ export default function PreviewPage() {
   }
 
   const previewBytes = redactedBytes ?? pdfBytes
+  const summary = summarize(entities?.length === 0, removedItems)
+  const canEdit = (entities?.length ?? 0) > 0 || hasReviewables
 
   return (
     <div className='h-screen flex flex-col'>
@@ -60,24 +72,27 @@ export default function PreviewPage() {
 
         <div className='shrink-0 border-t px-4 pt-5 pb-6'>
           <div className='max-w-2xl mx-auto flex flex-col gap-4'>
-            {entities?.length === 0 && (
-              <p className='text-xs text-muted-foreground text-center'>
-                Nothing personal found. This document looks clean.
+            {redactedBytes && summary && (
+              <p className='flex items-center justify-center gap-1.5 text-sm text-muted-foreground'>
+                <ShieldCheck className='size-4 shrink-0' aria-hidden />
+                {summary}
               </p>
             )}
             <div className='flex gap-3'>
-              <Button
-                variant='outline'
-                size='lg'
-                className='h-12 flex-1 gap-2'
-                onClick={() => navigate('/edit')}
-              >
-                <PenLine className='size-4' aria-hidden />
-                Edit redactions
-              </Button>
+              {canEdit && (
+                <Button
+                  variant='outline'
+                  size='lg'
+                  className='h-12 flex-1 gap-2'
+                  onClick={() => navigate('/edit')}
+                >
+                  <PenLine className='size-4' aria-hidden />
+                  Edit redactions
+                </Button>
+              )}
               <CtaButton
                 fullWidth
-                wrapperClassName='flex-[1.4]'
+                wrapperClassName={canEdit ? 'flex-[1.4]' : 'flex-1'}
                 onClick={handleDownload}
                 disabled={!redactedBytes}
               >
