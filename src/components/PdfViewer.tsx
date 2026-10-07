@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { TriangleAlert } from 'lucide-react'
 import type { PageStats } from '@/types'
-import { formatPageList, imageOnlyPages } from '@/lib/pageStats'
+import { formatPageList, imageOnlyPages, scannedPages } from '@/lib/pageStats'
 
 type PageSize = { width: number; height: number }
 
@@ -25,6 +25,8 @@ function PdfPage({
   rects,
   highlights,
   imageOnly,
+  scanned,
+  dimmed,
 }: {
   pageIndex: number
   size: PageSize
@@ -35,6 +37,8 @@ function PdfPage({
   rects: PageMatches
   highlights: PdfHighlight[]
   imageOnly: boolean
+  scanned: boolean
+  dimmed: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -120,6 +124,8 @@ function PdfPage({
         borderRadius: 4,
         overflow: 'hidden',
         flexShrink: 0,
+        opacity: dimmed ? 0.35 : 1,
+        transition: 'opacity 200ms',
       }}
     >
       {src && (
@@ -136,6 +142,12 @@ function PdfPage({
         <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-2.5 py-1 text-xs font-medium text-black shadow">
           <TriangleAlert className="size-3.5" aria-hidden />
           Image only, not scanned
+        </span>
+      )}
+      {scanned && (
+        <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-2.5 py-1 text-xs font-medium text-black shadow">
+          <TriangleAlert className="size-3.5" aria-hidden />
+          Scanned page, check it yourself
         </span>
       )}
       <canvas
@@ -157,9 +169,11 @@ export default function PdfViewer({
   pdfBytes,
   highlights,
   onMatches,
+  dimmedPages,
 }: {
   pdfBytes: Uint8Array | null
   highlights?: PdfHighlight[]
+  dimmedPages?: number[]
   onMatches?: (summary: MatchSummary, complete: boolean) => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -178,6 +192,7 @@ export default function PdfViewer({
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [imageOnly, setImageOnly] = useState<number[]>([])
+  const [scanned, setScanned] = useState<number[]>([])
   const [pageRects, setPageRects] = useState<Map<number, PageMatches>>(new Map())
   const searchValues = useMemo(
     () => [...new Set(highlights?.map((h) => h.value) ?? [])].sort(),
@@ -222,6 +237,7 @@ export default function PdfViewer({
         }))
         setPageSizes(sizes)
         setImageOnly(imageOnlyPages(msg.pageStats as PageStats[]))
+        setScanned(scannedPages(msg.pageStats as PageStats[]))
         setPageSrcs(new Array(msg.pageCount as number).fill(null))
         ratiosRef.current = new Array(msg.pageCount as number).fill(0)
         setCurrentPage(1)
@@ -283,6 +299,7 @@ export default function PdfViewer({
     if (!pdfBytes || !workerRef.current) return
     setPageSizes([])
     setImageOnly([])
+    setScanned([])
     setPageSrcs([])
     setError(null)
     setPageRects(new Map())
@@ -324,6 +341,7 @@ export default function PdfViewer({
   }
 
   const totalPages = pageSizes.length
+  const allScanned = totalPages > 0 && scanned.length === totalPages
 
   return (
     <div className="w-full flex flex-col relative">
@@ -332,6 +350,22 @@ export default function PdfViewer({
           <span className="bg-black/60 text-white text-xs px-3 py-1 rounded-full tabular-nums">
             {currentPage} of {totalPages}
           </span>
+        </div>
+      )}
+      {allScanned && (
+        <div
+          role="alert"
+          className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+          <p>
+            <span className="font-medium">This document is a scan.</span>
+            <br />
+            <span className="text-muted-foreground">
+              Cloak finds personal info in the scan's hidden text, which can miss or misplace words. Check every page
+              yourself before sharing.
+            </span>
+          </p>
         </div>
       )}
       {imageOnly.length > 0 && (
@@ -344,7 +378,8 @@ export default function PdfViewer({
             <span className="font-medium">
               {formatPageList(imageOnly)} {imageOnly.length === 1 ? 'is an image' : 'are images'}, so Cloak couldn't scan{' '}
               {imageOnly.length === 1 ? 'it' : 'them'} for personal info.
-            </span>{' '}
+            </span>
+            <br />
             <span className="text-muted-foreground">Check {imageOnly.length === 1 ? 'it' : 'them'} yourself before sharing.</span>
           </p>
         </div>
@@ -363,6 +398,8 @@ export default function PdfViewer({
               rects={pageRects.get(i) ?? {}}
               highlights={highlights ?? []}
               imageOnly={imageOnly.includes(i + 1)}
+              scanned={!allScanned && scanned.includes(i + 1)}
+              dimmed={dimmedPages?.includes(i + 1) ?? false}
             />
           ))
         ) : (

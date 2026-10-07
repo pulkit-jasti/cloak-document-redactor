@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import CtaButton from '@/components/CtaButton'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { PdfImage } from '@/types'
 import type { MatchSummary } from '@/components/PdfViewer'
 import type { EntityGroup } from '../groupRedactions'
 import EntityCard from './EntityCard'
+import ImagesTab from './ImagesTab'
 
 interface Props {
   groups: EntityGroup[]
@@ -13,9 +16,12 @@ interface Props {
   onSetApproved: (keys: string[], approved: boolean) => void
   onSave: () => void
   isSaving?: boolean
+  images: PdfImage[] | null
+  removedImageIds: string[]
+  onSetImagesRemoved: (ids: string[], removed: boolean) => void
 }
 
-export default function EntityPanel({ groups, matches, matchesComplete, onSetApproved, onSave, isSaving }: Props) {
+export default function EntityPanel({ groups, matches, matchesComplete, onSetApproved, onSave, isSaving, images, removedImageIds, onSetImagesRemoved }: Props) {
   const found = groups
     .filter((g) => (matches[g.value]?.count ?? 0) > 0)
     .sort((a, b) => matches[a.value].pages[0] - matches[b.value].pages[0])
@@ -36,7 +42,16 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
 
   return (
     <div className='w-96 flex flex-col overflow-hidden'>
-      <div className='flex-1 overflow-y-auto p-4 min-h-0'>
+      <Tabs defaultValue='text' className='flex-1 min-h-0 gap-0'>
+      <div className='shrink-0 px-4 pt-4'>
+        <TabsList className='w-full'>
+          <TabsTrigger value='text'>Text</TabsTrigger>
+          <TabsTrigger value='images'>
+            Images{images && images.length > 0 ? ` (${images.length})` : ''}
+          </TabsTrigger>
+        </TabsList>
+      </div>
+      <TabsContent value='text' className='overflow-y-auto p-4 min-h-0'>
         {groups.length > 0 && !matchesComplete ? (
           <p className='px-1 py-12 text-center text-sm text-muted-foreground'>Finding matches in your document…</p>
         ) : found.length === 0 ? (
@@ -112,7 +127,11 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
             </div>
           </>
         )}
-      </div>
+      </TabsContent>
+      <TabsContent value='images' className='overflow-y-auto p-4 min-h-0'>
+        <ImagesTab images={images} removedIds={removedImageIds} onSetRemoved={onSetImagesRemoved} />
+      </TabsContent>
+      </Tabs>
 
       <div className='shrink-0 border-t px-4 pt-4 pb-7'>
         <CtaButton fullWidth onClick={onSave} disabled={isSaving}>

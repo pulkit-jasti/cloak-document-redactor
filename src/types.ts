@@ -10,4 +10,13 @@ export type PageStats = {
   charCount: number
   imageCoverage: number
   hasText: boolean
+  scanned: boolean
+}
+
+export type PdfImage = {
+  id: string
+  page: number
+  index: number
+  fullPage: boolean
+  thumbUrl: string | null
 }

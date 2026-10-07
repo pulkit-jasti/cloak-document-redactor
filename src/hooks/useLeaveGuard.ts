@@ -11,6 +11,7 @@ export function useLeaveGuard(getMessage: (next: Location) => string | null) {
 
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
+      !import.meta.env.DEV &&
       !bypassRef.current &&
       currentLocation.pathname !== nextLocation.pathname &&
       getMessageRef.current(nextLocation) !== null,
@@ -24,6 +25,7 @@ export function useLeaveGuard(getMessage: (next: Location) => string | null) {
   }, [blocker])
 
   useEffect(() => {
+    if (import.meta.env.DEV) return
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault()
       e.returnValue = ''
