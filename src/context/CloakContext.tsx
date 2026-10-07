@@ -12,11 +12,13 @@ interface CloakContextValue {
   redactedBytes: Uint8Array | null
   entities: Redaction[] | null
   removedImageIds: string[]
+  keptLinkUrls: string[]
   cloakStats: CloakStats | null
   setCloakStats: (stats: CloakStats) => void
   setPdf: (url: string, bytes: Uint8Array, fileName: string) => void
   setEntities: (entities: Redaction[]) => void
   setRemovedImageIds: (ids: string[]) => void
+  setKeptLinkUrls: (urls: string[]) => void
   setRedactedBytes: (bytes: Uint8Array | null) => void
   reset: () => void
 }
@@ -30,6 +32,7 @@ export function CloakProvider({ children }: { children: React.ReactNode }) {
   const [redactedBytes, setRedactedBytes] = useState<Uint8Array | null>(null)
   const [entities, setEntities] = useState<Redaction[] | null>(null)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
+  const [keptLinkUrls, setKeptLinkUrls] = useState<string[]>([])
   const [cloakStats, setCloakStats] = useState<CloakStats | null>(null)
   const blobUrlRef = useRef<string | null>(null)
 
@@ -44,6 +47,7 @@ export function CloakProvider({ children }: { children: React.ReactNode }) {
     setFileName(name)
     setRedactedBytes(null)
     setRemovedImageIds([])
+    setKeptLinkUrls([])
   }
 
   const reset = useCallback(() => {
@@ -57,11 +61,12 @@ export function CloakProvider({ children }: { children: React.ReactNode }) {
     setRedactedBytes(null)
     setEntities(null)
     setRemovedImageIds([])
+    setKeptLinkUrls([])
     setCloakStats(null)
   }, [])
 
   return (
-    <CloakContext.Provider value={{ pdfUrl, pdfBytes, fileName, redactedBytes, entities, removedImageIds, cloakStats, setCloakStats, setPdf, setEntities, setRemovedImageIds, setRedactedBytes, reset }}>
+    <CloakContext.Provider value={{ pdfUrl, pdfBytes, fileName, redactedBytes, entities, removedImageIds, keptLinkUrls, cloakStats, setCloakStats, setPdf, setEntities, setRemovedImageIds, setKeptLinkUrls, setRedactedBytes, reset }}>
       {children}
     </CloakContext.Provider>
   )

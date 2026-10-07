@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
 import CtaButton from '@/components/CtaButton'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import type { PdfImage } from '@/types'
+import type { PdfImage, PdfLink } from '@/types'
 import type { MatchSummary } from '@/components/PdfViewer'
 import type { EntityGroup } from '../groupRedactions'
 import EntityCard from './EntityCard'
 import ImagesTab from './ImagesTab'
+import CategorySection from './CategorySection'
+import LinkCard from './LinkCard'
 
 interface Props {
   groups: EntityGroup[]
@@ -19,9 +19,12 @@ interface Props {
   images: PdfImage[] | null
   removedImageIds: string[]
   onSetImagesRemoved: (ids: string[], removed: boolean) => void
+  links: PdfLink[] | null
+  keptLinkUrls: string[]
+  onSetLinksKept: (urls: string[], kept: boolean) => void
 }
 
-export default function EntityPanel({ groups, matches, matchesComplete, onSetApproved, onSave, isSaving, images, removedImageIds, onSetImagesRemoved }: Props) {
+export default function EntityPanel({ groups, matches, matchesComplete, onSetApproved, onSave, isSaving, images, removedImageIds, onSetImagesRemoved, links, keptLinkUrls, onSetLinksKept }: Props) {
   const found = groups
     .filter((g) => (matches[g.value]?.count ?? 0) > 0)
     .sort((a, b) => matches[a.value].pages[0] - matches[b.value].pages[0])
@@ -33,7 +36,14 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
     categories.delete('Miscellaneous')
     categories.set('Miscellaneous', misc)
   }
-  const types = [...categories.keys()]
+  const hasLinks = (links?.length ?? 0) > 0
+  const LINKS_KEY = 'Links'
+  const types = [...categories.keys(), ...(hasLinks ? [LINKS_KEY] : [])]
+  const linkUrls = (links ?? []).map((l) => l.url)
+  const keptSet = new Set(keptLinkUrls)
+  const removedLinkCount = linkUrls.filter((u) => !keptSet.has(u)).length
+  const linksChecked =
+    removedLinkCount === linkUrls.length ? true : removedLinkCount === 0 ? false : 'indeterminate'
 
   const [open, setOpen] = useState<string[] | null>(null)
   const openTypes = open ?? types
@@ -54,7 +64,7 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
       <TabsContent value='text' className='overflow-y-auto p-4 min-h-0'>
         {groups.length > 0 && !matchesComplete ? (
           <p className='px-1 py-12 text-center text-sm text-muted-foreground'>Finding matches in your document…</p>
-        ) : found.length === 0 ? (
+        ) : found.length === 0 && !hasLinks ? (
           <div className='flex flex-col items-center justify-center h-full gap-2 text-center px-4 py-12'>
             <p className='text-sm font-medium'>Nothing personal found</p>
             <p className='text-xs text-muted-foreground'>
@@ -73,57 +83,50 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
             </div>
             <div className='border-t'>
               {[...categories].map(([type, items]) => {
-                const isOpen = openTypes.includes(type)
                 const approvedCount = items.filter((g) => g.approved).length
                 const checked =
                   approvedCount === items.length ? true : approvedCount === 0 ? false : 'indeterminate'
                 return (
-                  <div key={type} className='border-b'>
-                    <div className='flex items-center gap-3 px-1'>
-                      <Checkbox
-                        className='rounded-[4px]'
-                        checked={checked}
-                        onCheckedChange={() => onSetApproved(items.map((g) => g.key), checked !== true)}
-                        aria-label={`Redact all ${type}`}
-                      />
-                      <button
-                        type='button'
-                        aria-expanded={isOpen}
-                        onClick={() => toggle(type)}
-                        className='group flex flex-1 items-center justify-between py-3.5 text-sm font-medium'
-                      >
-                        <span>
-                          {type} <span className='text-muted-foreground tabular-nums'>({items.length})</span>
-                        </span>
-                        <ChevronDown
-                          className={`size-4 shrink-0 transition duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:text-foreground ${
-                            isOpen ? 'rotate-180 text-foreground' : 'text-muted-foreground'
-                          }`}
-                          aria-hidden
-                        />
-                      </button>
-                    </div>
-                    <div
-                      inert={!isOpen}
-                      className={`grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
-                        isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-                      }`}
-                    >
-                      <div className='min-h-0 overflow-hidden'>
-                        <div
-                          className={`space-y-2 pb-4 transition-[opacity,translate] ease-out motion-reduce:transition-none ${
-                            isOpen ? 'translate-y-0 opacity-100 delay-100 duration-400' : '-translate-y-1 opacity-0 duration-200'
-                          }`}
-                        >
-                          {items.map((g) => (
-                            <EntityCard key={g.key} group={g} match={matches[g.value]} onSetApproved={onSetApproved} />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <CategorySection
+                    key={type}
+                    title={type}
+                    count={items.length}
+                    checked={checked}
+                    onToggleAll={() => onSetApproved(items.map((g) => g.key), checked !== true)}
+                    ariaLabel={`Redact all ${type}`}
+                    isOpen={openTypes.includes(type)}
+                    onToggleOpen={() => toggle(type)}
+                  >
+                    {items.map((g) => (
+                      <EntityCard key={g.key} group={g} match={matches[g.value]} onSetApproved={onSetApproved} />
+                    ))}
+                  </CategorySection>
                 )
               })}
+              {hasLinks && links && (
+                <CategorySection
+                  title={LINKS_KEY}
+                  count={links.length}
+                  checked={linksChecked}
+                  onToggleAll={() => onSetLinksKept(linkUrls, linksChecked === true)}
+                  ariaLabel='Remove all links'
+                  isOpen={openTypes.includes(LINKS_KEY)}
+                  onToggleOpen={() => toggle(LINKS_KEY)}
+                >
+                  <p className='px-1 pb-1 text-xs text-muted-foreground'>
+                    Links can hide email addresses or names in their targets. Uncheck any you want to keep. Links that jump
+                    within the document are always kept.
+                  </p>
+                  {links.map((link) => (
+                    <LinkCard
+                      key={link.url}
+                      link={link}
+                      removed={!keptSet.has(link.url)}
+                      onChange={(removed) => onSetLinksKept([link.url], !removed)}
+                    />
+                  ))}
+                </CategorySection>
+              )}
             </div>
           </>
         )}

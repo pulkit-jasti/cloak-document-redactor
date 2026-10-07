@@ -20,3 +20,9 @@ export type PdfImage = {
   fullPage: boolean
   thumbUrl: string | null
 }
+
+export type PdfLink = {
+  url: string
+  pages: number[]
+  count: number
+}

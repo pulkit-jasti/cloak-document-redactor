@@ -12,10 +12,11 @@ function getMupdf() {
 type LoadMsg         = { id: number; type: 'load';        bytes: Uint8Array }
 type RenderMsg       = { id: number; type: 'render';      pageIndex: number; scale: number }
 type SearchPageMsg   = { id: number; type: 'searchPage';  pageIndex: number; values: string[] }
-type RedactMsg       = { id: number; type: 'redact';      bytes: Uint8Array; entities: string[]; imageIds: string[] }
+type RedactMsg       = { id: number; type: 'redact';      bytes: Uint8Array; entities: string[]; imageIds: string[]; keepLinks: string[] }
 type ExtractTextMsg  = { id: number; type: 'extractText'; bytes: Uint8Array }
 type ListImagesMsg   = { id: number; type: 'listImages';  bytes: Uint8Array }
-type WorkerInMsg     = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg | ExtractTextMsg | ListImagesMsg
+type ListLinksMsg    = { id: number; type: 'listLinks';   bytes: Uint8Array }
+type WorkerInMsg     = LoadMsg | RenderMsg | SearchPageMsg | RedactMsg | ExtractTextMsg | ListImagesMsg | ListLinksMsg
 
 let doc: MupdfDocument | null = null
 
@@ -215,7 +216,7 @@ function stripImageMetadata(pdfDoc: PDFDocument) {
   }
 }
 
-const HIDDEN_DATA_KEYS = ['Alt', 'ActualText', 'Thumb', 'PieceInfo', 'Metadata']
+const HIDDEN_DATA_KEYS = ['Alt', 'ActualText', 'Thumb', 'PieceInfo', 'Metadata', 'AF', 'AA']
 
 function stripHiddenObjectData(pdfDoc: PDFDocument) {
   const count = pdfDoc.countObjects()
@@ -237,6 +238,22 @@ function stripMetadata(pdfDoc: PDFDocument) {
   const root = trailer.get('Root')
   root.delete('Metadata')
   root.delete('Outlines')
+  root.delete('Collection')
+  const names = root.get('Names')
+  if (!names.isNull()) {
+    names.delete('EmbeddedFiles')
+    names.delete('JavaScript')
+  }
+  const openAction = root.get('OpenAction')
+  if (openAction.isDictionary()) root.delete('OpenAction')
+}
+
+function removeExternalLinks(page: PDFPage, keep: Set<string>) {
+  for (let guard = page.getLinks().length; guard > 0; guard--) {
+    const target = page.getLinks().find((link) => link.isExternal() && !keep.has(link.getURI()))
+    if (!target) return
+    page.deleteLink(target)
+  }
 }
 
 const MIN_TEXT_CHARS = 20
@@ -439,6 +456,25 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
       const transfer = images.flatMap((img) => (img.thumb ? [img.thumb.buffer as ArrayBuffer] : []))
       self.postMessage({ id: msg.id, type: 'imagesListed', images, pageCount }, { transfer })
 
+    } else if (msg.type === 'listLinks') {
+      const linkDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf')
+      const pageCount = linkDoc.countPages()
+      const byUrl = new Map<string, { url: string; pages: number[]; count: number }>()
+      for (let i = 0; i < pageCount; i++) {
+        const page = linkDoc.loadPage(i) as PDFPage
+        for (const link of page.getLinks()) {
+          if (!link.isExternal()) continue
+          const url = link.getURI()
+          const entry = byUrl.get(url) ?? { url, pages: [], count: 0 }
+          if (!entry.pages.includes(i + 1)) entry.pages.push(i + 1)
+          entry.count++
+          byUrl.set(url, entry)
+        }
+        page.destroy()
+      }
+      linkDoc.destroy()
+      self.postMessage({ id: msg.id, type: 'linksListed', links: [...byUrl.values()] })
+
     } else if (msg.type === 'redact') {
       // Open a fresh copy of the document so we don't mutate the viewer's doc
       const pdfDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf') as PDFDocument
@@ -450,6 +486,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
         imagesByPage.set(pageNo - 1, (imagesByPage.get(pageNo - 1) ?? new Set()).add(index))
       }
       const pagesToDelete: number[] = []
+      const keepLinks = new Set(msg.keepLinks)
 
       for (let i = 0; i < pageCount; i++) {
         const page = pdfDoc.loadPage(i)
@@ -486,6 +523,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
             mupdf.PDFPage.REDACT_TEXT_NONE,
           )
         }
+        removeExternalLinks(page as PDFPage, keepLinks)
         page.destroy()
       }
 

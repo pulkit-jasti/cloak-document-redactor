@@ -1,4 +1,6 @@
-export async function redactPdf(bytes: Uint8Array, entities: string[], signal?: AbortSignal, imageIds: string[] = []): Promise<Uint8Array> {
+export type RedactOptions = { imageIds?: string[]; keepLinks?: string[] }
+
+export async function redactPdf(bytes: Uint8Array, entities: string[], signal?: AbortSignal, options: RedactOptions = {}): Promise<Uint8Array> {
   const worker = new Worker(
     new URL('../workers/mupdf.worker.ts', import.meta.url),
     { type: 'module' },
@@ -14,7 +16,7 @@ export async function redactPdf(bytes: Uint8Array, entities: string[], signal?: 
       }
       worker.addEventListener('message', handler)
       worker.onerror = reject
-      worker.postMessage({ id: 0, type: 'redact', bytes, entities, imageIds })
+      worker.postMessage({ id: 0, type: 'redact', bytes, entities, imageIds: options.imageIds ?? [], keepLinks: options.keepLinks ?? [] })
     })
   } finally {
     worker.terminate()

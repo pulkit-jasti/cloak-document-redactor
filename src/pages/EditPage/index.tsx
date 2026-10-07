@@ -1,24 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Redaction } from '@/types';
+import type { PdfLink, Redaction } from '@/types';
 import Navbar from '@/components/Navbar';
 import PdfViewer, { type MatchSummary } from '@/components/PdfViewer';
 import { useCloak } from '@/context/CloakContext';
 import { useLeaveGuard } from '@/hooks/useLeaveGuard';
 import { listImages, type ImageScan } from '@/lib/listImages';
+import { listLinks } from '@/lib/listLinks';
 import { redactPdf } from '@/lib/redactPdf';
 import EntityPanel from './components/EntityPanel';
 import { groupRedactions, groupKey } from './groupRedactions';
 
 export default function EditPage() {
 	const navigate = useNavigate();
-	const { pdfBytes, fileName, entities, setEntities, setRedactedBytes, removedImageIds, setRemovedImageIds } =
+	const { pdfBytes, fileName, entities, setEntities, setRedactedBytes, removedImageIds, setRemovedImageIds, keptLinkUrls, setKeptLinkUrls } =
 		useCloak();
 
 	const [redactions, setRedactions] = useState<Redaction[]>(entities ?? []);
 	const [isSaving, setIsSaving] = useState(false);
 	const [scan, setScan] = useState<ImageScan | null>(null);
 	const [removedImages, setRemovedImages] = useState<string[]>(removedImageIds);
+	const [links, setLinks] = useState<PdfLink[] | null>(null);
+	const [keptLinks, setKeptLinks] = useState<string[]>(keptLinkUrls);
 	const [matches, setMatches] = useState<{ summary: MatchSummary; complete: boolean }>({
 		summary: {},
 		complete: false,
@@ -48,17 +51,36 @@ export default function EditPage() {
 		};
 	}, [pdfBytes]);
 
+	useEffect(() => {
+		if (!pdfBytes) return;
+		const controller = new AbortController();
+		listLinks(pdfBytes, controller.signal)
+			.then(setLinks)
+			.catch(() => {
+				if (!controller.signal.aborted) setLinks([]);
+			});
+		return () => controller.abort();
+	}, [pdfBytes]);
+
 	const imagesChanged =
 		removedImages.length !== removedImageIds.length ||
 		removedImages.some((id) => !removedImageIds.includes(id));
+	const linksChanged =
+		keptLinks.length !== keptLinkUrls.length || keptLinks.some((url) => !keptLinkUrls.includes(url));
 	const hasUnappliedChanges =
-		imagesChanged || redactions.some((r, i) => r.approved !== entities?.[i]?.approved);
+		imagesChanged ||
+		linksChanged || redactions.some((r, i) => r.approved !== entities?.[i]?.approved);
 
 	const images = scan?.images ?? null;
 	const dimmedPages = useMemo(
 		() => (images ?? []).filter((i) => i.fullPage && removedImages.includes(i.id)).map((i) => i.page),
 		[images, removedImages],
 	);
+
+	const setLinksKept = (urls: string[], kept: boolean) => {
+		const set = new Set(urls);
+		setKeptLinks((prev) => (kept ? [...new Set([...prev, ...urls])] : prev.filter((url) => !set.has(url))));
+	};
 
 	const setImagesRemoved = (ids: string[], removed: boolean) => {
 		const set = new Set(ids);
@@ -89,8 +111,12 @@ export default function EditPage() {
 		try {
 			setEntities(redactions);
 			setRemovedImageIds(removedImages);
+			setKeptLinkUrls(keptLinks);
 			const approvedEntities = groups.filter((g) => g.approved).map((g) => g.value);
-			const redacted = await redactPdf(pdfBytes, approvedEntities, undefined, removedImages);
+			const redacted = await redactPdf(pdfBytes, approvedEntities, undefined, {
+				imageIds: removedImages,
+				keepLinks: keptLinks,
+			});
 			setRedactedBytes(redacted);
 			allowLeave();
 			navigate('/preview');
@@ -137,6 +163,9 @@ export default function EditPage() {
 					images={images}
 					removedImageIds={removedImages}
 					onSetImagesRemoved={setImagesRemoved}
+					links={links}
+					keptLinkUrls={keptLinks}
+					onSetLinksKept={setLinksKept}
 				/>
 			</main>
 		</div>
