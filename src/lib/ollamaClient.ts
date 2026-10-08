@@ -1,7 +1,38 @@
 import type { Redaction } from '@/types'
 import { extractRegexEntities, isClaimed, valueKey, type DetectPiiOptions } from '@/lib/pdfPipeline'
 
-const OLLAMA_BASE = 'http://localhost:11434'
+export const DEFAULT_OLLAMA_URL = 'http://localhost:11434'
+const URL_STORAGE_KEY = 'cloak:ollama:url'
+
+export function normalizeOllamaUrl(url: string): string {
+  return url.trim().replace(/\/+$/, '') || DEFAULT_OLLAMA_URL
+}
+
+export function getOllamaUrl(): string {
+  try {
+    return normalizeOllamaUrl(localStorage.getItem(URL_STORAGE_KEY) ?? '')
+  } catch {
+    return DEFAULT_OLLAMA_URL
+  }
+}
+
+export function setOllamaUrl(url: string) {
+  const value = normalizeOllamaUrl(url)
+  try {
+    if (value === DEFAULT_OLLAMA_URL) localStorage.removeItem(URL_STORAGE_KEY)
+    else localStorage.setItem(URL_STORAGE_KEY, value)
+  } catch {
+    return
+  }
+}
+
+export function isLocalOllamaUrl(url: string): boolean {
+  try {
+    return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(normalizeOllamaUrl(url)).hostname)
+  } catch {
+    return false
+  }
+}
 const PROBE_TIMEOUT_MS = 2000
 const PAGE_TIMEOUT_MS = 180_000
 const MAX_PAGE_CHARS = 20_000
@@ -25,7 +56,7 @@ export type OllamaProbeResult =
 
 async function fetchModelCapabilities(name: string): Promise<string[] | null> {
   try {
-    const res = await fetch(`${OLLAMA_BASE}/api/show`, {
+    const res = await fetch(`${getOllamaUrl()}/api/show`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
@@ -46,7 +77,7 @@ function isChatModelByHeuristic(m: { name: string; details?: { family?: string }
 export async function probeOllama(): Promise<OllamaProbeResult> {
   // Step 1: normal fetch to get model list
   try {
-    const res = await fetch(`${OLLAMA_BASE}/api/tags`, {
+    const res = await fetch(`${getOllamaUrl()}/api/tags`, {
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
     })
     const json = await res.json()
@@ -79,7 +110,7 @@ export async function probeOllama(): Promise<OllamaProbeResult> {
     // - If Ollama is running: resolves with opaque response (status 0, no body)
     // - If Ollama is not running: rejects with TypeError (connection refused)
     try {
-      await fetch(`${OLLAMA_BASE}/api/tags`, {
+      await fetch(`${getOllamaUrl()}/api/tags`, {
         mode: 'no-cors',
         signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
       })
@@ -91,7 +122,7 @@ export async function probeOllama(): Promise<OllamaProbeResult> {
 }
 
 export async function warmUpModel(model: string): Promise<void> {
-  await fetch(`${OLLAMA_BASE}/api/chat`, {
+  await fetch(`${getOllamaUrl()}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -240,7 +271,7 @@ async function runOllamaPage(model: string, text: string, signal?: AbortSignal):
   let finalChunk: OllamaChunk | null = null
 
   try {
-    const res = await fetch(`${OLLAMA_BASE}/api/chat`, {
+    const res = await fetch(`${getOllamaUrl()}/api/chat`, {
       signal: combined,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

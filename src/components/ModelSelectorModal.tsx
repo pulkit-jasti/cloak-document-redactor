@@ -1,9 +1,7 @@
-import { Bot, ChevronDown, Cpu, Download, Loader2, Trash2 } from 'lucide-react'
+import { ChevronDown, Cpu, Download, Loader2, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useOllama } from '@/context/OllamaContext'
 import { useNerModel, type NerDownloadState } from '@/context/NerModelContext'
-import { warmUpModel, type OllamaModel } from '@/lib/ollamaClient'
 import { NER_MODELS, getNerModel, type NerModel } from '@/lib/nerModels'
 import Modal from '@/components/Modal'
 
@@ -17,7 +15,7 @@ function CheckIcon() {
   )
 }
 
-function ModelRow({
+export function ModelRow({
   name,
   subtitle,
   badge,
@@ -100,45 +98,32 @@ interface ModelSelectorModalProps {
 }
 
 export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
-  const { status, models, selectedModel, setSelectedModel } = useOllama()
   const { selectedId, setSelectedId, states, download, remove } = useNerModel()
 
   const handleSelectNer = (id: string) => {
-    setSelectedModel(null)
     setSelectedId(id)
-    if (states[id]?.status === 'missing') download(id)
-    onClose()
-  }
-
-  const handleSelectOllama = (model: string) => {
-    setSelectedModel(model)
-    warmUpModel(model).catch(() => {})
-    onClose()
-  }
-
-  const modelSubtitle = (m: OllamaModel) => {
-    const parts = [m.parameterSize, m.quantization, m.family].filter(Boolean)
-    return parts.join(' · ')
+    const status = states[id]?.status
+    if (status === 'missing') download(id)
+    if (status !== 'missing' && status !== 'downloading') onClose()
   }
 
   const nerSubtitle = (m: NerModel) => {
     const state = states[m.id]
     const where = state?.status === 'ready' ? 'downloaded' : 'runs in browser'
-    return `${m.summary} · ${m.size} · ${where}`
+    return `${m.tradeoff} · ${m.size} · ${where}`
   }
 
   return (
     <Modal open={open} onClose={onClose} title="Choose detection model">
       <div className="flex flex-col gap-6 p-4 overflow-y-auto max-h-[65vh]">
         <div className="flex flex-col gap-1.5">
-          <span className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">Built-in</span>
           {NER_MODELS.map((m) => (
             <ModelRow
               key={m.id}
               name={m.name}
               subtitle={nerSubtitle(m)}
               badge={m.badge}
-              selected={selectedModel === null && selectedId === m.id}
+              selected={selectedId === m.id}
               onClick={() => handleSelectNer(m.id)}
               action={
                 <NerModelAction
@@ -152,33 +137,13 @@ export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
           ))}
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <span className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">Ollama</span>
-          {status === 'available' && models.length > 0 ? (
-            models.map((m) => (
-              <ModelRow
-                key={m.name}
-                name={m.name}
-                subtitle={modelSubtitle(m)}
-                selected={selectedModel === m.name}
-                onClick={() => handleSelectOllama(m.name)}
-              />
-            ))
-          ) : (
-            <p className="px-3 py-2 text-sm text-muted-foreground">
-              Not connected. Use the Connect Ollama button to get started.
-            </p>
-          )}
-        </div>
       </div>
     </Modal>
   )
 }
 
 export function ModelSelectorTrigger({ onClick }: { onClick: () => void }) {
-  const { selectedModel } = useOllama()
   const { selectedId } = useNerModel()
-  const Icon = selectedModel ? Bot : Cpu
 
   return (
     <Button
@@ -187,9 +152,9 @@ export function ModelSelectorTrigger({ onClick }: { onClick: () => void }) {
       aria-haspopup="dialog"
       className="h-9 gap-2 rounded-full px-4 font-normal"
     >
-      <Icon className="size-4 text-muted-foreground" aria-hidden />
+      <Cpu className="size-4 text-muted-foreground" aria-hidden />
       <span className="text-muted-foreground">Model:</span>
-      <span className="max-w-40 truncate font-medium">{selectedModel ?? getNerModel(selectedId).name}</span>
+      <span className="max-w-40 truncate font-medium">{getNerModel(selectedId).name}</span>
       <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden />
     </Button>
   )

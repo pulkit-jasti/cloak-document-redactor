@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { useOllama } from '@/context/OllamaContext'
+import { getOllamaUrl, isLocalOllamaUrl, setOllamaUrl } from '@/lib/ollamaClient'
 import Modal from '@/components/Modal'
 
 const isWindows = typeof navigator !== 'undefined' && navigator.userAgent.includes('Win')
@@ -34,20 +36,35 @@ interface ConnectOllamaModalProps {
 export function ConnectOllamaModal({ open, onClose, onConnected }: ConnectOllamaModalProps) {
   const { recheck, isChecking } = useOllama()
   const [error, setError] = useState<string | null>(null)
+  const [address, setAddress] = useState(getOllamaUrl)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [prevOpen, setPrevOpen] = useState(open)
+
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (open) {
+      setAdvancedOpen(false)
+      setError(null)
+      setAddress(getOllamaUrl())
+    }
+  }
+
+  const isLocal = isLocalOllamaUrl(address)
 
   const handleConnect = async () => {
     setError(null)
+    setOllamaUrl(address)
     const status = await recheck()
     if (status === 'available') {
       onConnected()
     } else {
-      setError("Couldn't connect. Make sure the command is running in your terminal.")
+      setError("Couldn't connect to Ollama. Make sure the command above is running and the address is correct.")
     }
   }
 
   return (
     <Modal open={open} onClose={onClose} title="Connect Ollama">
-      <div className="flex flex-col gap-5 p-6">
+      <div className="flex flex-col gap-5 p-6 text-left">
         <p className="text-sm text-muted-foreground">
           Run this command in your terminal to start Ollama with access to this app:
         </p>
@@ -62,8 +79,57 @@ export function ConnectOllamaModal({ open, onClose, onConnected }: ConnectOllama
           Once running, click below to verify the connection.
         </p>
 
+        <div>
+          <button
+            type="button"
+            aria-expanded={advancedOpen}
+            aria-controls="ollama-advanced"
+            onClick={() => setAdvancedOpen((v) => !v)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ChevronDown
+              className={`size-4 transition-transform duration-300 ease-out ${advancedOpen ? '' : '-rotate-90'}`}
+              aria-hidden
+            />
+            Advanced settings
+          </button>
+          <div
+            id="ollama-advanced"
+            inert={!advancedOpen}
+            className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${
+              advancedOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+            }`}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <div className="flex flex-col gap-2 pt-3">
+                <label htmlFor="ollama-address" className="text-sm font-medium">
+                  Ollama address
+                </label>
+                <input
+                  id="ollama-address"
+                  type="url"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  spellCheck={false}
+                  className="w-full rounded-lg border bg-background px-3 py-2 font-mono text-xs outline-none transition-colors focus-visible:border-foreground/40"
+                />
+                {!isLocal && (
+                  <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                    This address points to another machine. Your document text will be sent there, so only use a server you
+                    trust. It also needs to use https, or your browser will block it.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-3 pt-1">
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          {error && (
+            <p role="alert" className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">
+              {error}
+            </p>
+          )}
           <button
             onClick={handleConnect}
             disabled={isChecking}
