@@ -27,7 +27,7 @@ const OVERLAY_EXIT_MS = 450
 export default function UploadPanel() {
   const navigate = useNavigate()
   const { setPdf, setEntities, setRedactedBytes, setRemovedItems, setHasReviewables, setCloakStats } = useCloak()
-  const { status, selectedModel } = useOllama()
+  const { status } = useOllama()
   const { selectedId: nerModelId } = useNerModel()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [progress, setProgress] = useState<CloakProgress | null>(null)
@@ -64,11 +64,7 @@ export default function UploadPanel() {
     const { signal } = controller
     const startedAt = performance.now()
     const nerModelName = getNerModel(nerModelId).name
-    let modelUsed = selectedModel ?? nerModelName
     const report = (next: CloakProgress) => {
-      if (next.stage === "scanning" && !next.parallel && selectedModel) {
-        modelUsed = `${nerModelName}, fallback from ${selectedModel}`
-      }
       if (!signal.aborted) setProgress(next)
     }
 
@@ -85,9 +81,7 @@ export default function UploadPanel() {
       }
 
       const redactions = await detectPii(pageTexts, {
-        mode: selectedModel ? "ollama" : "ner",
         nerModel: nerModelId,
-        ollamaModel: selectedModel ?? undefined,
         signal,
         onProgress: report,
       })
@@ -99,7 +93,7 @@ export default function UploadPanel() {
 
       const seconds = (performance.now() - startedAt) / 1000
       if (IS_DEV) {
-        console.log(`[Cloak] Cloaked in ${seconds.toFixed(1)}s | model: ${modelUsed} | pages: ${pageTexts.length}`)
+        console.log(`[Cloak] Cloaked in ${seconds.toFixed(1)}s | model: ${nerModelName} | pages: ${pageTexts.length}`)
       }
 
       setPdf(url, bytes, selectedFile.name)
@@ -175,7 +169,7 @@ export default function UploadPanel() {
           <ModelSelectorTrigger onClick={() => setModelSelectorOpen(true)} />
           <Button
             variant="outline"
-            onClick={() => (ollamaConnected ? setModelSelectorOpen(true) : setConnectOllamaOpen(true))}
+            onClick={() => setConnectOllamaOpen(true)}
             aria-haspopup="dialog"
             className="h-9 gap-2 rounded-full px-4 font-normal"
           >
@@ -192,7 +186,12 @@ export default function UploadPanel() {
 
       <div className="pointer-events-auto">
         {progress && (
-          <CloakingOverlay progress={progress} closing={isClosingOverlay} onCancel={handleCancel} />
+          <CloakingOverlay
+            progress={progress}
+            fileName={selectedFile?.name}
+            closing={isClosingOverlay}
+            onCancel={handleCancel}
+          />
         )}
         <NoTextModal
           open={noTextOpen}
@@ -207,7 +206,7 @@ export default function UploadPanel() {
         <ConnectOllamaModal
           open={connectOllamaOpen}
           onClose={() => setConnectOllamaOpen(false)}
-          onConnected={() => { setConnectOllamaOpen(false); setModelSelectorOpen(true) }}
+          onConnected={() => setConnectOllamaOpen(false)}
         />
       </div>
     </>

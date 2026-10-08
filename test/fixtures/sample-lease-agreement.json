@@ -1,0 +1,25 @@
+{
+  "source": "../../public/samples/cloak-sample-lease-agreement.pdf",
+  "pii": [
+    { "value": "Margaret Ellison", "type": "person" },
+    { "value": "Daniel Whitaker", "type": "person" },
+    { "value": "Thomas Whitaker", "type": "person" },
+    { "value": "Rosa Delgado", "type": "person" },
+    { "value": "Ellison", "type": "person" },
+    { "value": "Whitaker", "type": "person" },
+    { "value": "Delgado", "type": "person" },
+    { "value": "m.ellison@example.com", "type": "email" },
+    { "value": "daniel.whitaker@example.com", "type": "email" },
+    { "value": "rosa.delgado@example.com", "type": "email" },
+    { "value": "(503) 555-0142", "type": "phone" },
+    { "value": "(503) 555-0187", "type": "phone" },
+    { "value": "(503) 555-0163", "type": "phone" },
+    { "value": "(312) 555-0119", "type": "phone" },
+    { "value": "078-05-1120", "type": "ssn" },
+    { "value": "March 14, 1991", "type": "date_of_birth" },
+    { "value": "D4829173", "type": "identifier" },
+    { "value": "1847 Alder Street, Apt 3B", "type": "address" },
+    { "value": "Portland", "type": "location" },
+    { "value": "97214", "type": "postcode" }
+  ]
+}

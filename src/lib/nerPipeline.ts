@@ -1,11 +1,21 @@
 import type { ProgressInfo } from '@huggingface/transformers';
-import {
-	ModelStatus,
-	type ProgressEvent,
-} from '@/components/ModelLoadingIndicator';
 import type { NerEntity } from '@/workers/ner.worker';
 
-export { ModelStatus, type ProgressEvent, type NerEntity };
+export type { NerEntity };
+
+export enum ModelStatus {
+	Idle = 'idle',
+	Loading = 'loading',
+	Ready = 'ready',
+	Error = 'error',
+}
+
+export type ProgressEvent = {
+	status: ModelStatus;
+	file?: string;
+	progress?: number;
+	total?: boolean;
+};
 
 type ProgressCallback = (event: ProgressEvent) => void;
 type ModelListener = (modelId: string, event: ProgressEvent) => void;

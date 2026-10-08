@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Timer } from "lucide-react"
+import { FileText, Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { CloakProgress } from "@/lib/pdfPipeline"
 
@@ -21,10 +21,8 @@ function describe(progress: CloakProgress): { label: string; percent: number | n
     case "reading":
       return { label: "Reading your document…", percent: null }
     case "scanning": {
-      const { done, total, parallel } = progress
-      const label = parallel
-        ? `Scanned ${done} of ${total} ${total === 1 ? "page" : "pages"}`
-        : `Scanning page ${done + 1} of ${total}`
+      const { done, total } = progress
+      const label = `Scanning page ${Math.min(done + 1, total)} of ${total}`
       return { label, percent: Math.round((done / total) * 100) }
     }
     case "redacting":
@@ -72,11 +70,12 @@ function DevStopwatch() {
 
 interface Props {
   progress: CloakProgress
+  fileName?: string
   closing?: boolean
   onCancel: () => void
 }
 
-export default function CloakingOverlay({ progress, closing = false, onCancel }: Props) {
+export default function CloakingOverlay({ progress, fileName, closing = false, onCancel }: Props) {
   const { label, percent } = describe(progress)
 
   return (
@@ -88,6 +87,12 @@ export default function CloakingOverlay({ progress, closing = false, onCancel }:
       {IS_DEV && <DevStopwatch />}
 
       <div className="cloak-overlay-content relative flex w-full max-w-sm flex-col items-center px-6 text-center">
+        {fileName && (
+          <p className="mb-4 flex max-w-full items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground">
+            <FileText className="size-3.5 shrink-0" aria-hidden />
+            <span className="truncate" title={fileName}>{fileName}</span>
+          </p>
+        )}
         <h1 className="text-2xl font-semibold tracking-tight">Cloaking your document…</h1>
         <p className="mt-3 text-sm text-muted-foreground tabular-nums" aria-live="polite">
           {label}

@@ -2,12 +2,9 @@ import {
   AtSign,
   CalendarDays,
   Cpu,
-  Download,
-  FileUp,
   Hash,
   MapPin,
   Phone,
-  ScanSearch,
   ServerOff,
   Code,
   Bot,
@@ -17,24 +14,6 @@ import {
 import { LINKS } from '@/lib/links'
 
 type Item = { icon: LucideIcon; title: string; body: string }
-
-export const STEPS: Item[] = [
-  {
-    icon: FileUp,
-    title: 'Drop your PDF',
-    body: 'Pick any text-based PDF. It opens right in your browser. Nothing is uploaded.',
-  },
-  {
-    icon: ScanSearch,
-    title: 'Review what was found',
-    body: 'Cloak blacks out names, emails, phone numbers and more. Turn any of them on or off before you save.',
-  },
-  {
-    icon: Download,
-    title: 'Download a clean copy',
-    body: 'Get a PDF with the sensitive text removed, ready to share with ChatGPT, Claude or anyone else.',
-  },
-]
 
 export const DETECTIONS: { icon: LucideIcon; label: string }[] = [
   { icon: User, label: 'Names' },
@@ -65,7 +44,7 @@ export const FEATURES: (Item & { href?: string })[] = [
   {
     icon: Bot,
     title: 'Bring your own model',
-    body: 'Already running Ollama? Connect it and use any local LLM for detection. It still never leaves your machine.',
+    body: 'Already running Ollama? Connect a local AI to give plain-English instructions and double-check results. It never leaves your machine.',
   },
 ]
 
@@ -85,6 +64,10 @@ export const FAQS: { q: string; a: string }[] = [
   {
     q: 'What personal information (PII) can it find?',
     a: 'Names, locations, email addresses, phone numbers, dates of birth and US Social Security numbers. You review every detection before downloading, so you stay in control.',
+  },
+  {
+    q: 'Can I choose what gets redacted?',
+    a: 'Yes. You can uncheck anything before downloading. With a local AI model connected through Ollama, you can also describe what to hide in plain English, like "hide the witnesses but keep the accused". The model runs on your own computer, so nothing leaves your device.',
   },
   {
     q: 'Is the redaction permanent?',

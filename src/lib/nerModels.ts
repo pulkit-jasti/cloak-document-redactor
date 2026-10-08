@@ -2,7 +2,7 @@ export type NerModel = {
   id: string
   repo: string
   name: string
-  summary: string
+  tradeoff: string
   size: string
   badge?: string
   device: 'wasm'
@@ -15,7 +15,7 @@ export const NER_MODELS: NerModel[] = [
     id: 'pii-redactor-small',
     repo: 'Horizon-Labs/pii-redactor-small',
     name: 'PII Redactor',
-    summary: '29 PII types',
+    tradeoff: 'Most accurate',
     size: '~290 MB',
     badge: 'Recommended',
     device: 'wasm',
@@ -26,7 +26,7 @@ export const NER_MODELS: NerModel[] = [
     id: 'gravitee-pii-small',
     repo: 'gravitee-io/bert-small-pii-detection',
     name: 'Gravitee PII Small',
-    summary: '26 PII types',
+    tradeoff: 'Fastest, 10× smaller',
     size: '~29 MB',
     device: 'wasm',
     dtype: 'q8',

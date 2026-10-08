@@ -30,6 +30,7 @@ const SETS: Record<string, string[]> = {
     'legal-complaint-grothe.json',
     'legal-complaint-wajid.json',
   ],
+  sample: ['sample-lease-agreement.json'],
 }
 const fixtureFiles = SETS[testSet()]
 const OLLAMA = isOllamaTest()

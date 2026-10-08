@@ -3,7 +3,6 @@ import Navbar from "@/components/Navbar"
 import { useCloak } from "@/context/CloakContext"
 import { useInView } from "@/hooks/useInView"
 import Hero from "./components/Hero"
-import HowItWorks from "./components/HowItWorks"
 import DetectsSection from "./components/DetectsSection"
 import PrivacySection from "./components/PrivacySection"
 import Faq from "./components/Faq"
@@ -33,7 +32,6 @@ export default function UploadPage() {
 
       <main className="flex-1">
         <Hero logoRef={heroLogoRef} />
-        <HowItWorks />
         <DetectsSection />
         <PrivacySection />
         <Faq />

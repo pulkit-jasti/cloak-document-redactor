@@ -4,6 +4,7 @@ import Logo from "@/assets/logo-main.svg?react"
 import { InteractiveGridPattern } from "@/components/ui/interactive-grid-pattern"
 import { useIsClient } from "@/hooks/useIsClient"
 import UploadPanel from "./UploadPanel"
+import SampleCard from "./SampleCard"
 
 const TRUST_POINTS = ["Free", "No sign-up", "Open source"]
 
@@ -44,12 +45,13 @@ export default function Hero({ logoRef }: HeroProps) {
         <h1 id="hero-title" className="mt-12 text-3xl font-semibold tracking-tight text-balance md:text-4xl">
           Redact PDFs before you share them with AI
         </h1>
-        <p className="mt-4 max-w-md text-base text-muted-foreground text-pretty">
+        <p className="mt-4 max-w-lg text-base text-muted-foreground text-pretty">
           Cloak finds names, emails, phone numbers and other personal details, then blacks them out.
           All right here in your browser.
         </p>
 
-        <div className="mt-10 w-full max-w-md">
+        <div className="relative mt-10 w-full max-w-md">
+          <SampleCard />
           <UploadPanel />
         </div>
 
