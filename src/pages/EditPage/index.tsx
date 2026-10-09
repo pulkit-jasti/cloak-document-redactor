@@ -8,7 +8,7 @@ import { useLeaveGuard } from '@/hooks/useLeaveGuard';
 import { listImages, type ImageScan } from '@/lib/listImages';
 import { listLinks } from '@/lib/listLinks';
 import { redactPdf } from '@/lib/redactPdf';
-import EntityPanel from './components/EntityPanel';
+import EntityPanel, { CUSTOM_TYPE } from './components/EntityPanel';
 import { groupRedactions, groupKey } from './groupRedactions';
 
 export default function EditPage() {
@@ -27,11 +27,13 @@ export default function EditPage() {
 		complete: false,
 	});
 
+	const [customPreview, setCustomPreview] = useState('');
 	const groups = useMemo(() => groupRedactions(redactions), [redactions]);
-	const highlights = useMemo(
-		() => groups.map(({ value, approved }) => ({ value, approved })),
-		[groups],
-	);
+	const highlights = useMemo(() => {
+		const listed = groups.map(({ value, approved }) => ({ value, approved }));
+		const previewListed = groups.some((g) => g.key === groupKey(customPreview));
+		return customPreview && !previewListed ? [...listed, { value: customPreview, approved: false, preview: true }] : listed;
+	}, [groups, customPreview]);
 
 	useEffect(() => {
 		if (!pdfBytes) return;
@@ -69,7 +71,9 @@ export default function EditPage() {
 		keptLinks.length !== keptLinkUrls.length || keptLinks.some((url) => !keptLinkUrls.includes(url));
 	const hasUnappliedChanges =
 		imagesChanged ||
-		linksChanged || redactions.some((r, i) => r.approved !== entities?.[i]?.approved);
+		linksChanged ||
+		redactions.length !== (entities?.length ?? 0) ||
+		redactions.some((r, i) => r.approved !== entities?.[i]?.approved || r.value !== entities?.[i]?.value);
 
 	const images = scan?.images ?? null;
 	const dimmedPages = useMemo(
@@ -103,6 +107,16 @@ export default function EditPage() {
 		setRedactions((prev) =>
 			prev.map((r) => (set.has(groupKey(r.value)) ? { ...r, approved } : r)),
 		);
+	};
+
+	const addCustom = (value: string) => {
+		const page = matches.summary[value]?.pages[0] ?? 1;
+		setRedactions((prev) => [...prev, { id: crypto.randomUUID(), type: CUSTOM_TYPE, value, page, approved: true }]);
+		setCustomPreview('');
+	};
+
+	const removeCustom = (key: string) => {
+		setRedactions((prev) => prev.filter((r) => !(r.type === CUSTOM_TYPE && groupKey(r.value) === key)));
 	};
 
 	const handleSave = async () => {
@@ -168,6 +182,9 @@ export default function EditPage() {
 					links={links}
 					keptLinkUrls={keptLinks}
 					onSetLinksKept={setLinksKept}
+					onPreviewCustom={setCustomPreview}
+					onAddCustom={addCustom}
+					onRemoveCustom={removeCustom}
 				/>
 			</main>
 		</div>

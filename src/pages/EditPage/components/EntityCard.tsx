@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { EntityGroup } from '../groupRedactions'
@@ -7,9 +8,10 @@ interface Props {
   group: EntityGroup
   match: { pages: number[]; count: number }
   onSetApproved: (keys: string[], approved: boolean) => void
+  onRemove?: (key: string) => void
 }
 
-export default function EntityCard({ group: g, match, onSetApproved }: Props) {
+export default function EntityCard({ group: g, match, onSetApproved, onRemove }: Props) {
   const checkboxId = useId()
 
   return (
@@ -32,6 +34,19 @@ export default function EntityCard({ group: g, match, onSetApproved }: Props) {
       </div>
       <div className='flex shrink-0 flex-col items-end justify-between gap-2'>
         <span className='flex items-center gap-2 text-xs font-medium'>
+          {onRemove && (
+            <button
+              type='button'
+              onClick={(e) => {
+                e.preventDefault()
+                onRemove(g.key)
+              }}
+              aria-label={`Remove ${g.value}`}
+              className='rounded text-muted-foreground hover:text-foreground'
+            >
+              <X className='size-3.5' />
+            </button>
+          )}
           Redact
           <Checkbox
             id={checkboxId}

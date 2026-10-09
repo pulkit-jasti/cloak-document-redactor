@@ -6,6 +6,7 @@ import type { PdfImage, PdfLink } from '@/types'
 import type { MatchSummary } from '@/components/PdfViewer'
 import type { EntityGroup } from '../groupRedactions'
 import EntityCard from './EntityCard'
+import CustomRedactInput from './CustomRedactInput'
 import ImagesTab from './ImagesTab'
 import CategorySection from './CategorySection'
 import EmptyState from './EmptyState'
@@ -24,14 +25,20 @@ interface Props {
   links: PdfLink[] | null
   keptLinkUrls: string[]
   onSetLinksKept: (urls: string[], kept: boolean) => void
+  onPreviewCustom: (value: string) => void
+  onAddCustom: (value: string) => void
+  onRemoveCustom: (key: string) => void
 }
 
-export default function EntityPanel({ groups, matches, matchesComplete, onSetApproved, onSave, isSaving, images, removedImageIds, onSetImagesRemoved, links, keptLinkUrls, onSetLinksKept }: Props) {
+export const CUSTOM_TYPE = 'Custom'
+
+export default function EntityPanel({ groups, matches, matchesComplete, onSetApproved, onSave, isSaving, images, removedImageIds, onSetImagesRemoved, links, keptLinkUrls, onSetLinksKept, onPreviewCustom, onAddCustom, onRemoveCustom }: Props) {
   const found = groups
     .filter((g) => (matches[g.value]?.count ?? 0) > 0)
     .sort((a, b) => matches[a.value].pages[0] - matches[b.value].pages[0])
 
   const categories = new Map<string, EntityGroup[]>()
+  if (found.some((g) => g.type === CUSTOM_TYPE)) categories.set(CUSTOM_TYPE, [])
   for (const g of found) categories.set(g.type, [...(categories.get(g.type) ?? []), g])
   const misc = categories.get('Miscellaneous')
   if (misc) {
@@ -53,7 +60,7 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
   const toggle = (t: string) => setOpen(openTypes.includes(t) ? openTypes.filter((x) => x !== t) : [...openTypes, t])
 
   return (
-    <div className='w-96 flex flex-col overflow-hidden'>
+    <div className='w-[26rem] flex flex-col overflow-hidden'>
       <Tabs defaultValue='text' className='flex-1 min-h-0 gap-0'>
       <div className='shrink-0 px-4 pt-4'>
         <TabsList className='w-full'>
@@ -64,6 +71,13 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
         </TabsList>
       </div>
       <TabsContent value='text' className='overflow-y-auto p-4 min-h-0'>
+        <CustomRedactInput
+          matches={matches}
+          onPreview={onPreviewCustom}
+          onAdd={onAddCustom}
+          onApprove={(key) => onSetApproved([key], true)}
+          findListed={(value) => groups.find((g) => g.key === value.toLowerCase())}
+        />
         {groups.length > 0 && !matchesComplete ? (
           <p className='px-1 py-12 text-center text-sm text-muted-foreground'>Finding matches in your document…</p>
         ) : found.length === 0 && !hasLinks ? (
@@ -99,7 +113,13 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
                     onToggleOpen={() => toggle(type)}
                   >
                     {items.map((g) => (
-                      <EntityCard key={g.key} group={g} match={matches[g.value]} onSetApproved={onSetApproved} />
+                      <EntityCard
+                        key={g.key}
+                        group={g}
+                        match={matches[g.value]}
+                        onSetApproved={onSetApproved}
+                        onRemove={type === CUSTOM_TYPE ? onRemoveCustom : undefined}
+                      />
                     ))}
                   </CategorySection>
                 )

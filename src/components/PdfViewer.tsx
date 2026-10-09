@@ -8,12 +8,13 @@ type PageSize = { width: number; height: number }
 export type PdfHighlight = {
   value: string
   approved: boolean
+  preview?: boolean
 }
 
 type Box = [number, number, number, number]
 type PageMatches = Record<string, { rects: Box[]; count: number }>
 
-export type MatchSummary = Record<string, { pages: number[]; count: number }>
+export type MatchSummary = Record<string, { pages: number[]; count: number; done: boolean }>
 
 function PdfPage({
   pageIndex,
@@ -99,15 +100,15 @@ function PdfPage({
     for (const h of highlights) {
       const entityRects = rects[h.value]?.rects
       if (!entityRects) continue
-      ctx.setLineDash(h.approved ? [] : [4, 3])
-      ctx.strokeStyle = h.approved ? 'rgba(10, 10, 10, 0.9)' : 'rgba(115, 115, 115, 0.9)'
-      ctx.fillStyle = 'rgba(10, 10, 10, 0.12)'
+      ctx.setLineDash(h.approved || h.preview ? [] : [4, 3])
+      ctx.strokeStyle = h.preview ? 'rgba(220, 38, 38, 0.95)' : h.approved ? 'rgba(10, 10, 10, 0.9)' : 'rgba(115, 115, 115, 0.9)'
+      ctx.fillStyle = h.preview ? 'rgba(220, 38, 38, 0.15)' : 'rgba(10, 10, 10, 0.12)'
       for (const [x0, y0, x1, y1] of entityRects) {
         const x = x0 * scale
         const y = y0 * scale
         const w = (x1 - x0) * scale
         const height = (y1 - y0) * scale
-        if (h.approved) ctx.fillRect(x, y, w, height)
+        if (h.approved || h.preview) ctx.fillRect(x, y, w, height)
         ctx.strokeRect(x + inset, y + inset, w - lineWidth, height - lineWidth)
       }
     }
@@ -194,6 +195,7 @@ export default function PdfViewer({
   const [imageOnly, setImageOnly] = useState<number[]>([])
   const [scanned, setScanned] = useState<number[]>([])
   const [pageRects, setPageRects] = useState<Map<number, PageMatches>>(new Map())
+  const [pageSearched, setPageSearched] = useState<Map<number, Set<string>>>(new Map())
   const searchValues = useMemo(
     () => [...new Set(highlights?.map((h) => h.value) ?? [])].sort(),
     [highlights],
@@ -242,6 +244,7 @@ export default function PdfViewer({
         ratiosRef.current = new Array(msg.pageCount as number).fill(0)
         setCurrentPage(1)
         setPageRects(new Map())
+        setPageSearched(new Map())
       } else if (msg.type === 'rendered') {
         const blob = new Blob([msg.png as Uint8Array<ArrayBuffer>], { type: 'image/png' })
         const url = URL.createObjectURL(blob)
@@ -255,6 +258,7 @@ export default function PdfViewer({
         const pageIdx = msg.pageIndex as number
         const results = msg.results as PageMatches
         setPageRects((prev) => new Map(prev).set(pageIdx, results))
+        setPageSearched((prev) => new Map(prev).set(pageIdx, new Set(msg.values as string[])))
       } else if (msg.type === 'error') {
         console.error('[MuPDF Worker]', msg.message)
         setError(msg.message as string)
@@ -282,7 +286,10 @@ export default function PdfViewer({
   useEffect(() => {
     if (!onMatches || pageSizes.length === 0) return
     const summary: MatchSummary = {}
-    for (const value of searchValues) summary[value] = { pages: [], count: 0 }
+    for (const value of searchValues) {
+      const done = pageSizes.every((_, i) => pageSearched.get(i)?.has(value))
+      summary[value] = { pages: [], count: 0, done }
+    }
     for (const [pageIdx, results] of [...pageRects.entries()].sort(([a], [b]) => a - b)) {
       for (const [value, { count }] of Object.entries(results)) {
         const entry = summary[value]
@@ -292,7 +299,7 @@ export default function PdfViewer({
       }
     }
     onMatches(summary, pageRects.size === pageSizes.length)
-  }, [pageRects, pageSizes.length, searchValues, onMatches])
+  }, [pageRects, pageSearched, pageSizes, searchValues, onMatches])
 
   // Load document when bytes change
   useEffect(() => {

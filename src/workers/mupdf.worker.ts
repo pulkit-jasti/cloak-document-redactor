@@ -478,7 +478,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMsg>) => {
         if (matches.length > 0) results[value] = { rects: matches.flat(), count: matches.length }
       }
       page.destroy()
-      self.postMessage({ id: msg.id, type: 'searchResult', pageIndex: msg.pageIndex, results })
+      self.postMessage({ id: msg.id, type: 'searchResult', pageIndex: msg.pageIndex, results, values: msg.values })
 
     } else if (msg.type === 'listImages') {
       const imgDoc = mupdf.Document.openDocument(msg.bytes, 'application/pdf')
