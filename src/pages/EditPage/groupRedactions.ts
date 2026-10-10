@@ -6,6 +6,8 @@ export type EntityGroup = {
   value: string
   approved: boolean
   firstPage: number
+  order: number
+  source?: 'ai'
 }
 
 export function groupKey(value: string) {
@@ -21,7 +23,7 @@ export function groupRedactions(redactions: Redaction[]): EntityGroup[] {
       existing.firstPage = Math.min(existing.firstPage, r.page)
       continue
     }
-    groups.set(key, { key, type: r.type, value: r.value, approved: r.approved, firstPage: r.page })
+    groups.set(key, { key, type: r.type, value: r.value, approved: r.approved, firstPage: r.page, order: groups.size, source: r.source })
   }
   return [...groups.values()].sort((a, b) => a.firstPage - b.firstPage)
 }

@@ -398,3 +398,88 @@ export async function detectPiiWithOllama(
 
   return redactions
 }
+
+const INSTRUCTION_MODEL_PREFERENCE = ['gpt-oss', 'gemma4', 'qwen3.5']
+const MAX_INSTRUCTION_VALUE_WORDS = 15
+const MAX_INSTRUCTION_VALUE_CHARS = 120
+
+const INSTRUCTION_PROMPT = `You help redact a document. The user describes extra text they want hidden. Find every piece of text on the page that matches the description.
+
+Rules:
+- Copy each value exactly as it appears in the page text, character for character
+- Return the shortest span that fully covers each match (e.g. "eagle holding a rifle", not the whole sentence)
+- Only return text that matches the description
+- Return [] if nothing on the page matches
+
+Return ONLY a JSON array of strings.`
+
+export function pickInstructionModel(models: OllamaModel[]): string | null {
+  for (const prefix of INSTRUCTION_MODEL_PREFERENCE) {
+    const match = models.find((m) => m.name.startsWith(prefix))
+    if (match) return match.name
+  }
+  return [...models].sort((a, b) => b.size - a.size)[0]?.name ?? null
+}
+
+export async function findWithInstruction(
+  pageTexts: string[],
+  instruction: string,
+  model: string,
+  { signal, onProgress }: { signal?: AbortSignal; onProgress?: (done: number, total: number) => void } = {},
+): Promise<{ value: string; page: number }[]> {
+  const found: { value: string; page: number }[] = []
+  for (let pageIdx = 0; pageIdx < pageTexts.length; pageIdx++) {
+    signal?.throwIfAborted()
+    onProgress?.(pageIdx, pageTexts.length)
+    const text = pageTexts[pageIdx]
+    if (!text.trim() || text.length > MAX_PAGE_CHARS) continue
+    try {
+      const res = await fetch(`${getOllamaUrl()}/api/chat`, {
+        signal: AbortSignal.any([AbortSignal.timeout(PAGE_TIMEOUT_MS), ...(signal ? [signal] : [])]),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: INSTRUCTION_PROMPT },
+            { role: 'user', content: `Description: ${instruction}\n\nPage text:\n${text}` },
+          ],
+          format: { type: 'array', items: { type: 'string' } },
+          stream: false,
+          think: model.startsWith('gpt-oss') ? 'low' : false,
+          options: MODEL_OPTIONS,
+        }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      const values: unknown = JSON.parse(json.message?.content ?? '[]')
+      if (!Array.isArray(values)) continue
+      for (const raw of values) {
+        if (typeof raw !== 'string') continue
+        const value = raw.trim()
+        if (value.length < 2 || value.length > MAX_INSTRUCTION_VALUE_CHARS) continue
+        if (value.split(/\s+/).length > MAX_INSTRUCTION_VALUE_WORDS) continue
+        if (!appearsInText(value, text)) continue
+        found.push({ value, page: pageIdx + 1 })
+      }
+    } catch (err) {
+      if (signal?.aborted) throw err
+      console.warn(`[Instruction] page ${pageIdx + 1} failed:`, err)
+    }
+  }
+  onProgress?.(pageTexts.length, pageTexts.length)
+  return found
+}
+
+const MIN_INSTRUCTION_PARAMS_B = 8
+
+export function parameterBillions(model: OllamaModel): number {
+  const match = model.parameterSize.match(/([\d.]+)\s*([BM])/i)
+  if (!match) return 0
+  const size = parseFloat(match[1])
+  return match[2].toUpperCase() === 'M' ? size / 1000 : size
+}
+
+export function instructionCapableModels(models: OllamaModel[]): OllamaModel[] {
+  return models.filter((m) => parameterBillions(m) >= MIN_INSTRUCTION_PARAMS_B)
+}

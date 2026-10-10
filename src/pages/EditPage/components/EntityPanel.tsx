@@ -6,7 +6,7 @@ import type { PdfImage, PdfLink } from '@/types'
 import type { MatchSummary } from '@/components/PdfViewer'
 import type { EntityGroup } from '../groupRedactions'
 import EntityCard from './EntityCard'
-import CustomRedactInput from './CustomRedactInput'
+import CustomRedactInput, { type InstructionRun } from './CustomRedactInput'
 import ImagesTab from './ImagesTab'
 import CategorySection from './CategorySection'
 import EmptyState from './EmptyState'
@@ -28,11 +28,12 @@ interface Props {
   onPreviewCustom: (value: string) => void
   onAddCustom: (value: string) => void
   onRemoveCustom: (key: string) => void
+  onRunInstruction: InstructionRun
 }
 
 export const CUSTOM_TYPE = 'Custom'
 
-export default function EntityPanel({ groups, matches, matchesComplete, onSetApproved, onSave, isSaving, images, removedImageIds, onSetImagesRemoved, links, keptLinkUrls, onSetLinksKept, onPreviewCustom, onAddCustom, onRemoveCustom }: Props) {
+export default function EntityPanel({ groups, matches, matchesComplete, onSetApproved, onSave, isSaving, images, removedImageIds, onSetImagesRemoved, links, keptLinkUrls, onSetLinksKept, onPreviewCustom, onAddCustom, onRemoveCustom, onRunInstruction }: Props) {
   const found = groups
     .filter((g) => (matches[g.value]?.count ?? 0) > 0)
     .sort((a, b) => matches[a.value].pages[0] - matches[b.value].pages[0])
@@ -40,6 +41,7 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
   const categories = new Map<string, EntityGroup[]>()
   if (found.some((g) => g.type === CUSTOM_TYPE)) categories.set(CUSTOM_TYPE, [])
   for (const g of found) categories.set(g.type, [...(categories.get(g.type) ?? []), g])
+  categories.get(CUSTOM_TYPE)?.sort((a, b) => b.order - a.order)
   const misc = categories.get('Miscellaneous')
   if (misc) {
     categories.delete('Miscellaneous')
@@ -57,6 +59,7 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
   const [open, setOpen] = useState<string[] | null>(null)
   const openTypes = open ?? types
   const allOpen = types.every((t) => openTypes.includes(t))
+  const showList = !(groups.length > 0 && !matchesComplete) && (found.length > 0 || hasLinks)
   const toggle = (t: string) => setOpen(openTypes.includes(t) ? openTypes.filter((x) => x !== t) : [...openTypes, t])
 
   return (
@@ -77,6 +80,17 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
           onAdd={onAddCustom}
           onApprove={(key) => onSetApproved([key], true)}
           findListed={(value) => groups.find((g) => g.key === value.toLowerCase())}
+          onRunInstruction={onRunInstruction}
+          trailing={
+            showList && (
+              <button
+                onClick={() => setOpen(allOpen ? [] : types)}
+                className='shrink-0 text-xs text-muted-foreground hover:text-foreground'
+              >
+                {allOpen ? 'Collapse all' : 'Expand all'}
+              </button>
+            )
+          }
         />
         {groups.length > 0 && !matchesComplete ? (
           <p className='px-1 py-12 text-center text-sm text-muted-foreground'>Finding matches in your document…</p>
@@ -88,14 +102,6 @@ export default function EntityPanel({ groups, matches, matchesComplete, onSetApp
           />
         ) : (
           <>
-            <div className='mb-3 flex justify-end'>
-              <button
-                onClick={() => setOpen(allOpen ? [] : types)}
-                className='text-xs text-muted-foreground hover:text-foreground'
-              >
-                {allOpen ? 'Collapse all' : 'Expand all'}
-              </button>
-            </div>
             <div className='border-t'>
               {[...categories].map(([type, items]) => {
                 const approvedCount = items.filter((g) => g.approved).length

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PdfLink, Redaction } from '@/types';
 import Navbar from '@/components/Navbar';
@@ -8,6 +8,9 @@ import { useLeaveGuard } from '@/hooks/useLeaveGuard';
 import { listImages, type ImageScan } from '@/lib/listImages';
 import { listLinks } from '@/lib/listLinks';
 import { redactPdf } from '@/lib/redactPdf';
+import { extractPdfTextPerPage } from '@/lib/pdfPipeline';
+import { findWithInstruction } from '@/lib/ollamaClient';
+import type { InstructionRun } from './components/CustomRedactInput';
 import EntityPanel, { CUSTOM_TYPE } from './components/EntityPanel';
 import { groupRedactions, groupKey } from './groupRedactions';
 
@@ -28,6 +31,7 @@ export default function EditPage() {
 	});
 
 	const [customPreview, setCustomPreview] = useState('');
+	const pageTextsRef = useRef<string[] | null>(null);
 	const groups = useMemo(() => groupRedactions(redactions), [redactions]);
 	const highlights = useMemo(() => {
 		const listed = groups.map(({ value, approved }) => ({ value, approved }));
@@ -115,6 +119,30 @@ export default function EditPage() {
 		setCustomPreview('');
 	};
 
+	const runInstruction: InstructionRun = async (instruction, model, { signal, onProgress }) => {
+		if (!pdfBytes) return 0;
+		pageTextsRef.current ??= (await extractPdfTextPerPage(pdfBytes, signal)).pageTexts;
+		const found = await findWithInstruction(pageTextsRef.current, instruction, model, { signal, onProgress });
+		const byKey = new Map(groups.map((g) => [g.key, g]));
+		const toApprove = new Set<string>();
+		const toAdd: Redaction[] = [];
+		for (const { value, page } of found) {
+			const key = groupKey(value);
+			const existing = byKey.get(key);
+			if (existing) {
+				if (!existing.approved) toApprove.add(key);
+				continue;
+			}
+			byKey.set(key, { key, type: CUSTOM_TYPE, value, approved: true, firstPage: page, order: byKey.size, source: 'ai' });
+			toAdd.push({ id: crypto.randomUUID(), type: CUSTOM_TYPE, value, page, approved: true, source: 'ai' });
+		}
+		setRedactions((prev) => [
+			...prev.map((r) => (toApprove.has(groupKey(r.value)) ? { ...r, approved: true } : r)),
+			...toAdd,
+		]);
+		return toAdd.length + toApprove.size;
+	};
+
 	const removeCustom = (key: string) => {
 		setRedactions((prev) => prev.filter((r) => !(r.type === CUSTOM_TYPE && groupKey(r.value) === key)));
 	};
@@ -185,6 +213,7 @@ export default function EditPage() {
 					onPreviewCustom={setCustomPreview}
 					onAddCustom={addCustom}
 					onRemoveCustom={removeCustom}
+					onRunInstruction={runInstruction}
 				/>
 			</main>
 		</div>

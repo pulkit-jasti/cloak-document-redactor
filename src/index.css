@@ -177,6 +177,32 @@
     .scan-line { display: none; }
   }
 
+  .ai-glow {
+    position: relative;
+    isolation: isolate;
+    border-radius: var(--radius-md);
+    padding: 1.5px;
+    background: linear-gradient(90deg, #9e7aff, #fe8bbb, #ffbd7a, #7ad7ff, #9e7aff);
+    background-size: 200% 100%;
+    animation: cta-aurora-shift 6s linear infinite;
+  }
+  .ai-glow::before {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    z-index: -1;
+    border-radius: inherit;
+    background: inherit;
+    background-size: 200% 100%;
+    filter: blur(10px);
+    opacity: 0.55;
+    animation: cta-aurora-shift 6s linear infinite;
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ai-glow, .ai-glow::before { animation: none; }
+  }
+
   .cta-aurora {
     position: relative;
     isolation: isolate;

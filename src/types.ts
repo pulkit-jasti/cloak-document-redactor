@@ -4,6 +4,7 @@ export type Redaction = {
   value: string
   page: number
   approved: boolean
+  source?: 'ai'
 }
 
 export type PageStats = {

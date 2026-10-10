@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { X } from 'lucide-react'
+import { Sparkles, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { EntityGroup } from '../groupRedactions'
@@ -20,7 +20,10 @@ export default function EntityCard({ group: g, match, onSetApproved, onRemove }:
       className='flex cursor-pointer items-stretch gap-3 rounded-lg border px-3 py-2.5 bg-card transition-colors hover:bg-muted/40'
     >
       <div className={`flex-1 min-w-0 transition-opacity ${g.approved ? '' : 'opacity-50'}`}>
-        <p className='text-sm font-medium truncate'>{g.value}</p>
+        <p className='flex items-center gap-1.5 text-sm font-medium'>
+          {g.source === 'ai' && <Sparkles className='size-3.5 shrink-0 text-muted-foreground' aria-label='Found with AI' />}
+          <span className='truncate'>{g.value}</span>
+        </p>
         <div className='mt-1.5 flex flex-wrap items-center gap-1'>
           <span className='mr-0.5 text-xs text-muted-foreground'>
             {match.pages.length === 1 ? 'Page' : 'Pages'}
