@@ -359,7 +359,6 @@ export async function detectPii(pageTexts: string[], options: DetectPiiOptions =
       return spreadSurnames(await detectPiiWithOllama(pageTexts, ollamaModel, { signal, onProgress }))
     } catch (err) {
       if (signal?.aborted) throw err
-      console.warn('[Cloak] Ollama failed, falling back to NER:', err)
     }
   }
 

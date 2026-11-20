@@ -1,8 +1,22 @@
 {
   "name": "cloak-document-redactor",
   "private": true,
+  "version": "1.0.0",
+  "description": "Redact personal information from PDFs entirely in your browser. No uploads, no server, no account.",
   "license": "AGPL-3.0-or-later",
-  "version": "0.0.0",
+  "author": "Pulkit Jasti (https://github.com/pulkit-jasti)",
+  "homepage": "https://cloakdoc.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pulkit-jasti/cloak-document-redactor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pulkit-jasti/cloak-document-redactor/issues"
+  },
+  "keywords": ["pdf", "redaction", "pii", "privacy", "browser", "webassembly", "mupdf", "transformers.js"],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -37,11 +37,6 @@ function modelPath(modelId: string) {
   return USE_LOCAL_MODELS ? modelId : getNerModel(modelId).repo
 }
 
-function logDevInfo(modelId: string) {
-  const { device, dtype } = nerLoadOptions(modelId)
-  console.log(`[Cloak] ${modelId} ready: ${device} ${dtype}`)
-}
-
 function capTokenizerLength(pipe: TokenClassificationPipeline) {
   const limit = (pipe.model.config as { max_position_embeddings?: number }).max_position_embeddings
   const tokenizer = pipe.tokenizer as unknown as { model_max_length: number; _tokenizerConfig: { model_max_length?: number } }
@@ -63,7 +58,6 @@ function loadPipeline(modelId: string) {
 
   pipePromise.then(
     () => {
-      if (import.meta.env.DEV) logDevInfo(modelId)
       self.postMessage({ type: 'ready', modelId })
     },
     (err) => {

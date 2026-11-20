@@ -13,19 +13,31 @@ Live at [cloakdoc.app](https://cloakdoc.app). Desktop browsers only for now.
 
 1. **Pick a PDF.** It is read in the browser by [MuPDF](https://mupdf.com/) running as WebAssembly in a Web Worker. Text is extracted page by page. Pages that are only images (scans) are flagged, and a PDF with no text at all is rejected.
 2. **Detect personal info.** Each page's text goes through:
-   - a NER model ([`Xenova/bert-base-NER`](https://huggingface.co/Xenova/bert-base-NER)) running in the browser with [Transformers.js](https://github.com/huggingface/transformers.js), inside its own Web Worker (WebGPU when available, WASM otherwise). Finds people, organizations, locations and miscellaneous entities.
-   - regex patterns for emails, phone numbers and US SSNs.
+   - a PII detection model running in the browser with [Transformers.js](https://github.com/huggingface/transformers.js), inside its own Web Worker, on the CPU (WebAssembly). Finds names, organizations, locations, addresses, IDs and more. See [Models](#models).
+   - pattern matching for emails, phone numbers (US), US SSNs, credit cards, IBANs, IP addresses, dates of birth, passport, case, plate and other labeled ID numbers.
    - **Optional:** a local LLM through [Ollama](https://ollama.com/) instead of the built-in model. Falls back to the built-in model if Ollama fails.
 3. **Locate every occurrence.** Each detected value is searched on every page using whole-word matching (so "Ann" never matches inside "Annual"). Detections with no match in the PDF are hidden.
-4. **Review.** The edit page lists one card per unique value with the pages it appears on and its match count. Unchecking a card keeps that value everywhere in the document.
-5. **Redact and download.** MuPDF applies true redactions: the text is removed from the file, not just covered with a box. The file downloads as `<original name>_redacted.pdf`.
+4. **Review.** The edit page groups detections by category, with one card per unique value, the pages it appears on and its match count. Unchecking a card keeps that value everywhere in the document. You can also:
+   - add your own text to redact,
+   - with Ollama connected, describe what to redact in plain English (for example "hide the witnesses but keep the accused"),
+   - pick images to remove and choose which external links to keep.
+5. **Redact and download.** MuPDF applies true redactions: the text is removed from the file, not just covered with a box. Cloak also removes file properties and XMP metadata, image metadata, bookmarks, comments, attachments and form data, and flattens forms. The file downloads as `<original name>_redacted.pdf`.
 
 ### Privacy
 
 - No accounts, analytics or cookies. Fonts are self-hosted.
 - The PDF and its text never leave the browser.
-- Network requests that do happen: the site's own files, the detection model (downloaded once from Hugging Face, then cached in the browser's Cache Storage), and, only in Ollama mode, requests to the user's own Ollama server on `localhost`.
-- `localStorage` holds only the theme and the selected Ollama model.
+- Network requests that do happen: the site's own files, the detection model (downloaded once from Hugging Face, then cached in the browser's Origin Private File System), the ONNX Runtime WebAssembly files (loaded by Transformers.js from `cdn.jsdelivr.net`), and, only in Ollama mode, requests to the user's own Ollama server (`http://localhost:11434` by default).
+- `localStorage` holds only settings: the theme, the selected detection model, and the Ollama server URL and selected Ollama models.
+
+### Models
+
+| Model | Hugging Face repo | Download | License |
+| ----- | ----------------- | -------- | ------- |
+| PII Redactor (default) | [`Horizon-Labs/pii-redactor-small`](https://huggingface.co/Horizon-Labs/pii-redactor-small) | ~290 MB | Apache-2.0 |
+| Gravitee PII Small | [`gravitee-io/bert-small-pii-detection`](https://huggingface.co/gravitee-io/bert-small-pii-detection) | ~29 MB | Apache-2.0 |
+
+Both run as 8-bit quantized ONNX models on the CPU. Model files are not part of this repository; they keep their own licenses and notices.
 
 ## Stack
 
@@ -33,7 +45,8 @@ Live at [cloakdoc.app](https://cloakdoc.app). Desktop browsers only for now.
 - **Tailwind CSS v4**, **shadcn/ui** (Radix), **lucide-react** icons, Geist font
 - **React Router v7** (`BrowserRouter`)
 - **MuPDF** (`mupdf` npm package, WASM): text extraction, rendering, search and redaction
-- **Transformers.js v4** (`@huggingface/transformers`): in-browser NER on ONNX Runtime (WebGPU/WASM)
+- **Transformers.js v4** (`@huggingface/transformers`): in-browser PII detection on ONNX Runtime (WASM)
+- **libphonenumber-js**, **validator** and **chrono-node**: phone, email, card, IBAN, IP and date matching
 - **Ollama** (optional): local LLM detection over `http://localhost:11434`
 - **vite-prerender-plugin**: pre-renders the landing page HTML for SEO
 - **vite-plugin-svgr**: SVGs imported as React components (`*.svg?react`)
@@ -50,15 +63,18 @@ src/
     PreviewPage.tsx          Redacted PDF preview, download, run time
     EditPage/                Review list (one card per unique value) + highlighted PDF
   components/                Navbar, PdfViewer, CtaButton, CloakingOverlay (loading screen), modals, shadcn ui/
-  context/                   CloakContext (document state), ThemeContext, OllamaContext
+  context/                   CloakContext (document state), ThemeContext, OllamaContext, NerModelContext
+  hooks/                     useLeaveGuard (leave-page warning), useInView, useIsClient
   lib/
     pdfPipeline.ts           Text extraction, detection (NER + regex), progress reporting, cancellation
+    nerModels.ts             Built-in model list, score thresholds, saved selection
     nerPipeline.ts           Main-thread client for the NER worker
-    ollamaClient.ts          Ollama detection, probing and warm-up
+    ollamaClient.ts          Ollama detection, custom instructions, probing and warm-up
     redactPdf.ts             Sends approved values to the MuPDF worker for redaction
   workers/
-    mupdf.worker.ts          Load, render, whole-word search, redact, extract text
+    mupdf.worker.ts          Load, render, whole-word search, redact, strip metadata, extract text
     ner.worker.ts            Loads the Transformers.js pipeline and runs NER
+    opfsCache.ts             Caches model files in the Origin Private File System
   prerender.tsx              Landing page pre-render entry
 public/                      Favicons, manifest, robots.txt, sitemap.xml, llms.txt, OG image
 test/                        Playwright specs, test PDFs and expected-PII fixtures
@@ -66,14 +82,7 @@ test/                        Playwright specs, test PDFs and expected-PII fixtur
 
 ## Browser support
 
-| Browser       | Inference backend               |
-| ------------- | ------------------------------- |
-| Chrome / Edge | WebGPU (GPU)                    |
-| Safari 18+    | WebGPU (GPU)                    |
-| Firefox       | WASM (CPU), WebGPU behind flag  |
-| Other         | WASM (CPU)                      |
-
-WASM works everywhere, just slower. Mobile devices see a "desktop only" screen.
+Cloak works in current desktop versions of Chrome, Edge, Firefox and Safari. Detection runs on the CPU through WebAssembly in every browser; the GPU (WebGPU) is not used yet. Mobile devices see a "desktop only" screen.
 
 ---
 
@@ -81,8 +90,8 @@ WASM works everywhere, just slower. Mobile devices see a "desktop only" screen.
 
 ### Prerequisites
 
-- Node.js 20+
-- [git-lfs](https://git-lfs.com/), needed to download the model files
+- Node.js 20.19+ or 22.12+ (required by Vite 8)
+- [git-lfs](https://git-lfs.com/), only if you serve the model files locally (step 3)
 
 ### 1. Install dependencies
 
@@ -110,20 +119,31 @@ VITE_MODEL=
 | `VITE_MODEL_BASE_URL` | Local model file server (step 4). When set, models load from here. When empty, they load from Hugging Face. |
 | `VITE_REGEX_ENABLED`  | Set to `false` to turn off regex detection (emails, phones, SSNs). Defaults to on.                        |
 | `VITE_MODEL_ENABLED`  | Set to `false` to turn off model detection (built-in NER and Ollama) so only regex runs. Defaults to on.  |
-| `VITE_MODEL`          | Playwright tests only. `pii-redactor-small` (default), `bert-base-ner`, or `ollama:<model>`. Not read by the app. |
+| `VITE_MODEL`          | Playwright tests only. `pii-redactor-small` (default), `gravitee-pii-small`, or `ollama:<model>`. Not read by the app. |
+| `VITE_TEST_SET`       | Playwright report only. Which fixture set to run: `1` (default), `2` or `sample`. Not read by the app.    |
 
-### 3. Download the model
+### 3. Download the models (optional)
 
-With git-lfs installed (`git lfs install`):
+Skip this step and leave `VITE_MODEL_BASE_URL` empty to load models straight from Hugging Face.
+
+With git-lfs installed (`git lfs install`), clone each model into a folder named after its id in `src/lib/nerModels.ts`:
 
 ```bash
 mkdir -p models
 cd models
-git clone https://huggingface.co/Xenova/bert-base-NER bert-base-ner
+git clone https://huggingface.co/Horizon-Labs/pii-redactor-small pii-redactor-small
+git clone https://huggingface.co/gravitee-io/bert-small-pii-detection gravitee-pii-small
 cd ..
 ```
 
-The repo contains several ONNX variants (over 1 GB in total); Transformers.js only loads the one it needs. The `models/` directory is gitignored.
+Transformers.js loads the 8-bit model from `onnx/model_quantized.onnx`. The Gravitee repo keeps that file at the root as `model.quant.onnx`, so move it:
+
+```bash
+mkdir -p models/gravitee-pii-small/onnx
+mv models/gravitee-pii-small/model.quant.onnx models/gravitee-pii-small/onnx/model_quantized.onnx
+```
+
+The `models/` directory is gitignored.
 
 ### 4. Start the model file server
 
@@ -155,9 +175,9 @@ Then use **Connect Ollama** on the landing page and pick a model in the model se
 
 ### Dev-only tools (`npm run dev`)
 
-- A "Load model" pill in the corner that preloads the NER model and shows download progress.
 - A stopwatch on the loading screen.
-- A console line after each run: `[Cloak] Cloaked in 12.4s | model: <model> | pages: <n>`.
+- `window.__cloakEntities` and `window.__cloakOllamaModel`, read by the Playwright tests.
+- The leave-page warning is turned off.
 
 ## Scripts
 
@@ -186,11 +206,11 @@ The tests need the dev server running, plus the model server (`npm run models`) 
 - **English only, by design.** Documents in other languages are not supported and won't be.
 - **Text-based PDFs only.** Scanned or image-only pages are not read (no OCR yet); they are flagged so you can check them yourself.
 - **Detection can miss things or over-redact.** Always review before sharing.
-- **Entity categories are unreliable** with the current models, so there are no per-type filters yet.
+- **Categories are a guide, not a guarantee.** The model sometimes puts a value in the wrong category.
 - **Matching needs the exact text.** If the PDF stores a value differently from the extracted text (ligatures, unusual spacing), it can't be located or redacted.
-- **No manual additions yet.** You can't add text the model missed.
-- **Desktop only.** The mobile screen also hides the landing page content from mobile crawlers.
-- **No leave-page warning yet.** Reloading or leaving `/preview` or `/edit` discards the document.
+- **CPU only.** Detection doesn't use the GPU yet, so long documents take a while on slower computers.
+- **Desktop only.** On phones and tablets the upload panel is replaced with a "desktop only" notice; the rest of the landing page still shows.
+- **Nothing is saved.** Reloading or leaving `/preview` or `/edit` discards the document (you get a warning first).
 
 ## Why open source
 

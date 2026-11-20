@@ -8,7 +8,6 @@ import { ConnectOllamaModal } from "@/components/ConnectOllamaModal"
 import { useCloak } from "@/context/CloakContext"
 import { useOllama } from "@/context/OllamaContext"
 import { useNerModel } from "@/context/NerModelContext"
-import { getNerModel } from "@/lib/nerModels"
 import { extractPdfTextPerPage, detectPii, type CloakProgress } from "@/lib/pdfPipeline"
 import { redactPdf } from "@/lib/redactPdf"
 import { hasAnyText } from "@/lib/pageStats"
@@ -21,7 +20,6 @@ import DesktopOnlyNotice from "./DesktopOnlyNotice"
 import { isMobileDevice } from "@/lib/device"
 import OllamaIcon from "@/assets/ollama.svg?react"
 
-const IS_DEV = import.meta.env.DEV
 const OVERLAY_EXIT_MS = 450
 
 export default function UploadPanel() {
@@ -63,7 +61,6 @@ export default function UploadPanel() {
     abortRef.current = controller
     const { signal } = controller
     const startedAt = performance.now()
-    const nerModelName = getNerModel(nerModelId).name
     const report = (next: CloakProgress) => {
       if (!signal.aborted) setProgress(next)
     }
@@ -92,9 +89,6 @@ export default function UploadPanel() {
       signal.throwIfAborted()
 
       const seconds = (performance.now() - startedAt) / 1000
-      if (IS_DEV) {
-        console.log(`[Cloak] Cloaked in ${seconds.toFixed(1)}s | model: ${nerModelName} | pages: ${pageTexts.length}`)
-      }
 
       setPdf(url, bytes, selectedFile.name)
       setEntities(redactions)
@@ -103,10 +97,9 @@ export default function UploadPanel() {
       setHasReviewables(redacted.reviewable)
       setCloakStats({ seconds, pages: pageTexts.length })
       navigate("/preview")
-    } catch (err) {
+    } catch {
       URL.revokeObjectURL(url)
       if (signal.aborted) return
-      console.error("[Cloak] pipeline error:", err)
       closeOverlay(() => setErrorOpen(true))
     }
   }

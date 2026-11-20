@@ -164,8 +164,8 @@ export default function EditPage() {
 			setHasReviewables(redacted.reviewable);
 			allowLeave();
 			navigate('/preview');
-		} catch (err) {
-			console.error('[EditPage] redaction error:', err);
+		} catch {
+			// Stay on the edit page so the user can retry.
 		} finally {
 			setIsSaving(false);
 		}

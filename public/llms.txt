@@ -1,31 +1,36 @@
 # Cloak
 
-> Cloak is a privacy-first PDF redaction tool that runs entirely in the browser. It uses on-device AI to detect and redact personally identifiable information (PII) from PDF documents. No file is ever uploaded to a server — all processing happens locally on the user's device.
+> Cloak is a free, open source PDF redaction tool that runs entirely in the browser. It uses an on-device AI model and pattern matching to find personally identifiable information (PII) in PDF documents, lets the user review it, and removes it permanently. No file is ever uploaded to a server. All processing happens locally on the user's device.
 
 ## What it does
 
-Cloak lets users drop a PDF, automatically detects PII using a named entity recognition (NER) model running in the browser via WebGPU or WASM, and produces a redacted PDF with black boxes over sensitive content. The redacted file can be downloaded immediately.
+Cloak lets users drop a PDF, detects PII with a PII detection model running in the browser on the CPU (WebAssembly) plus pattern matching, and produces a redacted PDF. Redacted text is removed from the file, not just covered with a black box. The redacted file can be downloaded immediately.
 
-PII types detected include: names, email addresses, phone numbers, physical addresses, organizations, and other named entities depending on the model in use.
+PII types detected include: names, locations, email addresses, phone numbers, US Social Security numbers and dates of birth. The model can also flag addresses, ID numbers and other identifiers. Cloak is built for English-language documents.
 
 ## How it works
 
 1. User drops or selects a PDF on the landing page
-2. The NER model (loaded via @huggingface/transformers, running on-device) extracts text from the PDF page by page using PDF.js
-3. Detected entities are shown to the user for review
-4. User confirms redactions; mupdf applies permanent black-box redaction annotations to the PDF
-5. The redacted PDF is available for download
+2. MuPDF (running as WebAssembly in the browser) extracts the text page by page
+3. A PII detection model (run with Transformers.js) and pattern matching find personal information on each page
+4. The user reviews every detection, can add their own text, and can choose images and links to remove
+5. MuPDF applies true redactions and removes metadata, comments, attachments and form data
+6. The redacted PDF is available for download
 
-All processing is client-side. No network requests are made with document content.
+Optional: users who run Ollama on their own computer can use a local LLM for detection and give plain-English redaction instructions.
+
+All processing is client-side. No network requests are made with document content. The only downloads are the site itself and the detection model, which is cached in the browser after the first run.
 
 ## Key facts
 
 - URL: https://cloakdoc.app
 - Free to use, no account required
-- Works offline once the page and model are loaded
-- Supports any text-based PDF (not scanned image PDFs)
-- Built with React, Vite, PDF.js, mupdf, and @huggingface/transformers
-- Model runs via WebGPU when available, falls back to WASM on CPU
+- Open source under AGPL-3.0: https://github.com/pulkit-jasti/cloak-document-redactor
+- Works without an internet connection once the page and model have loaded
+- Supports text-based PDFs (scanned, image-only pages are not read yet)
+- Desktop browsers only (Chrome, Edge, Firefox, Safari)
+- Built with React, Vite, MuPDF and Transformers.js
+- Detection runs on the CPU through WebAssembly
 
 ## Pages
 

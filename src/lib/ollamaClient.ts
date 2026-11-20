@@ -243,32 +243,16 @@ function rejectReason(e: OllamaEntity, text: string, orgValues: string[]): strin
 
 function filterEntities(entities: OllamaEntity[], text: string): OllamaEntity[] {
   const orgValues = entities.filter((e) => e.type === 'Organization').map((e) => e.value.toLowerCase())
-  const kept: OllamaEntity[] = []
-  const dropped: { type: string; value: string; reason: string }[] = []
-  for (const e of entities) {
-    const reason = rejectReason(e, text, orgValues)
-    if (reason) dropped.push({ ...e, reason })
-    else kept.push(e)
-  }
-  if (dropped.length > 0) console.log(`[Ollama] filtered out ${dropped.length} entities:`, dropped)
-  return kept
+  return entities.filter((e) => !rejectReason(e, text, orgValues))
 }
 
 async function runOllamaPage(model: string, text: string, signal?: AbortSignal): Promise<OllamaEntity[]> {
-  if (text.length > MAX_PAGE_CHARS) {
-    console.warn(`[Ollama] page too long (${text.length} chars), using regex only`)
-    return []
-  }
+  if (text.length > MAX_PAGE_CHARS) return []
 
   const loopStop = new AbortController()
   const combined = AbortSignal.any([loopStop.signal, AbortSignal.timeout(PAGE_TIMEOUT_MS), ...(signal ? [signal] : [])])
-  const startedAt = performance.now()
-  const elapsed = () => ((performance.now() - startedAt) / 1000).toFixed(1)
-  console.log(`[Ollama] sending page: ${text.length} chars`)
 
   let content = ''
-  let stopReason = 'unknown'
-  let finalChunk: OllamaChunk | null = null
 
   try {
     const res = await fetch(`${getOllamaUrl()}/api/chat`, {
@@ -312,49 +296,18 @@ async function runOllamaPage(model: string, text: string, signal?: AbortSignal):
         const chunk: OllamaChunk = JSON.parse(line)
         if (chunk.error) throw new Error(chunk.error)
         content += chunk.message?.content ?? ''
-        if (chunk.done) {
-          finalChunk = chunk
-          stopReason = chunk.done_reason ?? 'stop'
-          break read
-        }
+        if (chunk.done) break read
       }
-      const loopKey = findRepeatLoop(extractEntities(content))
-      if (loopKey) {
-        stopReason = `repeat loop on "${loopKey}"`
-        console.warn(`[Ollama] repeat loop detected on "${loopKey}" after ${elapsed()}s, stopping generation`)
+      if (findRepeatLoop(extractEntities(content))) {
         loopStop.abort()
         break
       }
     }
   } catch (err) {
     if (signal?.aborted) throw err
-    stopReason = err instanceof DOMException && err.name === 'TimeoutError' ? 'timeout' : `error: ${err}`
   }
 
-  const returned = extractEntities(content)
-  const unique = dedupeEntities(returned)
-  const entities = filterEntities(unique, text)
-  const tokensPerSec =
-    finalChunk?.eval_count && finalChunk.eval_duration
-      ? (finalChunk.eval_count / (finalChunk.eval_duration / 1e9)).toFixed(1)
-      : null
-
-  console.log('[Ollama] page done:', {
-    stopReason,
-    sec: elapsed(),
-    promptTokens: finalChunk?.prompt_eval_count ?? null,
-    outputTokens: finalChunk?.eval_count ?? null,
-    tokensPerSec,
-    itemsReturned: returned.length,
-    unique: unique.length,
-    keptAfterFilter: entities.length,
-  })
-  if (stopReason !== 'stop') {
-    console.warn(`[Ollama] page stopped early (${stopReason}), salvaged ${unique.length} entities`)
-  }
-  console.log('[Ollama] entities:', entities)
-
-  return entities
+  return filterEntities(dedupeEntities(extractEntities(content)), text)
 }
 
 export async function detectPiiWithOllama(
@@ -464,7 +417,6 @@ export async function findWithInstruction(
       }
     } catch (err) {
       if (signal?.aborted) throw err
-      console.warn(`[Instruction] page ${pageIdx + 1} failed:`, err)
     }
   }
   onProgress?.(pageTexts.length, pageTexts.length)

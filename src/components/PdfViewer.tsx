@@ -260,13 +260,11 @@ export default function PdfViewer({
         setPageRects((prev) => new Map(prev).set(pageIdx, results))
         setPageSearched((prev) => new Map(prev).set(pageIdx, new Set(msg.values as string[])))
       } else if (msg.type === 'error') {
-        console.error('[MuPDF Worker]', msg.message)
         setError(msg.message as string)
       }
     }
 
-    worker.onerror = (e) => {
-      console.error('[MuPDF Worker] uncaught error', e)
+    worker.onerror = () => {
       setError('PDF renderer failed to load.')
     }
 

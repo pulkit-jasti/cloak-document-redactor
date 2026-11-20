@@ -68,7 +68,7 @@ export function NerModelProvider({ children }: { children: React.ReactNode }) {
 
   const download = useCallback((id: string) => {
     setState(id, { status: 'downloading', progress: 0 })
-    NERPipeline.getInstance(id).catch((err) => console.error(`[Cloak] failed to download ${id}:`, err))
+    NERPipeline.getInstance(id).catch(() => {})
   }, [setState])
 
   const remove = useCallback(async (id: string) => {
@@ -76,8 +76,7 @@ export function NerModelProvider({ children }: { children: React.ReactNode }) {
     try {
       await NERPipeline.remove(id)
       setState(id, { status: 'missing' })
-    } catch (err) {
-      console.error(`[Cloak] failed to remove ${id}:`, err)
+    } catch {
       const cached = await NERPipeline.isCached(id).catch(() => false)
       setState(id, { status: cached ? 'ready' : 'missing' })
     }
