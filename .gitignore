@@ -33,4 +33,5 @@ test/results/
 playwright-report/
 test-results/
 cutoff-tuning.md
+CLAUDE.md
 tsconfig.tsbuildinfo

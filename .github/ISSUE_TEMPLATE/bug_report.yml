@@ -1,0 +1,37 @@
+name: Bug report
+description: Something isn't working, or a value wasn't redacted
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please **never attach a real personal document**. Only share PDFs that are public or made up.
+        Security issue? Use **Report a vulnerability** in the Security tab instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Steps to reproduce, what you expected, and what happened instead.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: model
+    attributes:
+      label: Detection model
+      options:
+        - Gravitee PII Small (default)
+        - PII Redactor (most accurate)
+        - Ollama
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and operating system
+      placeholder: e.g. Chrome 131 on macOS 15
+    validations:
+      required: true

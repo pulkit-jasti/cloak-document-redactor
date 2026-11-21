@@ -125,6 +125,13 @@ export default function VerifyPage() {
               </a>
               .
             </p>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground text-pretty">
+              Found a way your data could leak, or redacted text that can still be recovered? Please{' '}
+              <a href={LINKS_OUT.security} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                report it privately
+              </a>{' '}
+              instead of opening a public issue.
+            </p>
           </Section>
 
           <section aria-labelledby="technical-details" className="border-t py-16 md:py-20">
