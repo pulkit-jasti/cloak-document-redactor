@@ -35,3 +35,4 @@ All processing is client-side. No network requests are made with document conten
 ## Pages
 
 - [Home / Upload](https://cloakdoc.app/): Drop a PDF to begin redaction
+- [Verify](https://cloakdoc.app/verify): How to check for yourself that no document is uploaded, every network request Cloak makes, and how to confirm redacted text is really removed

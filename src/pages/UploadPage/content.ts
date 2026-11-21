@@ -34,6 +34,7 @@ export const FEATURES: (Item & { href?: string })[] = [
     icon: ServerOff,
     title: 'Nothing is uploaded',
     body: "There is no server to upload to. Open your browser's network tab while you redact and see for yourself.",
+    href: LINKS.verify,
   },
   {
     icon: Code,
@@ -48,7 +49,7 @@ export const FEATURES: (Item & { href?: string })[] = [
   },
 ]
 
-export const FAQS: { q: string; a: string }[] = [
+export const FAQS: { q: string; a: string; link?: { label: string; href: string } }[] = [
   {
     q: 'Is Cloak free?',
     a: 'Yes. Cloak is free and open source. There is no account, no sign-up and no usage limit.',
@@ -59,7 +60,8 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Is my PDF uploaded anywhere?',
-    a: 'No. Your PDF is read, scanned and redacted entirely inside your browser, so it never leaves your device. The only thing Cloak downloads is the detection model itself.',
+    a: 'No. Your PDF is read, scanned and redacted entirely inside your browser, so it never leaves your device. Besides the site itself, Cloak only downloads the detection model and the engine that runs it.',
+    link: { label: 'See how to check this yourself', href: LINKS.verify },
   },
   {
     q: 'What personal information (PII) can it find?',
@@ -72,6 +74,7 @@ export const FAQS: { q: string; a: string }[] = [
   {
     q: 'Is the redaction permanent?',
     a: 'Yes. The redacted text is removed from the PDF, not just hidden behind a black box, so it cannot be copied, searched or recovered.',
+    link: { label: 'How to confirm the text is gone', href: `${LINKS.verify}#redaction-check` },
   },
   {
     q: 'Does it work with scanned PDFs?',

@@ -1,6 +1,8 @@
 import type { Ref } from "react"
-import { Check, Lock } from "lucide-react"
+import { Link } from "react-router-dom"
+import { ArrowRight, Check, Lock } from "lucide-react"
 import Logo from "@/assets/logo-main.svg?react"
+import { LINKS } from "@/lib/links"
 import { InteractiveGridPattern } from "@/components/ui/interactive-grid-pattern"
 import { useIsClient } from "@/hooks/useIsClient"
 import UploadPanel from "./UploadPanel"
@@ -33,10 +35,17 @@ export default function Hero({ logoRef }: HeroProps) {
       </div>
 
       <div className="pointer-events-none relative mx-auto flex max-w-2xl flex-col items-center px-6 pt-10 pb-24 text-center md:pt-16">
-        <p className="inline-flex items-center gap-2 rounded-full border bg-background/70 px-3.5 py-1.5 text-xs text-muted-foreground backdrop-blur">
+        <Link
+          to={LINKS.verify}
+          className="group pointer-events-auto inline-flex items-center gap-2 rounded-full border bg-background/70 px-3.5 py-1.5 text-xs text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+        >
           <Lock className="size-3.5" aria-hidden />
-          100% local. Your document never leaves your device.
-        </p>
+          Never leaves your device.
+          <span className="inline-flex items-center gap-1 font-medium text-foreground">
+            Verify it
+            <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </span>
+        </Link>
 
         <div ref={logoRef} className="mt-12 w-full max-w-lg">
           <Logo role="img" aria-label="Cloak" className="h-auto w-full" />

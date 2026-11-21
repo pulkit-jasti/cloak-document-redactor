@@ -1,4 +1,5 @@
-import { ArrowUpRight } from "lucide-react"
+import { Link } from "react-router-dom"
+import { ArrowRight, ArrowUpRight } from "lucide-react"
 import SectionHeader from "./SectionHeader"
 import { FEATURES } from "../content"
 
@@ -15,6 +16,9 @@ export default function PrivacySection() {
 
         <ul className="mt-14 grid gap-px overflow-hidden rounded-2xl border bg-border md:grid-cols-2">
           {FEATURES.map(({ icon: Icon, title, body, href }) => {
+            const isInternal = href?.startsWith("/")
+            const ArrowIcon = isInternal ? ArrowRight : ArrowUpRight
+            const cardClass = "group block h-full p-8 transition-colors hover:bg-muted/40"
             const inner = (
               <>
                 <div className="flex items-center justify-between">
@@ -22,8 +26,10 @@ export default function PrivacySection() {
                     <Icon className="size-4.5" aria-hidden />
                   </span>
                   {href && (
-                    <ArrowUpRight
-                      className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground"
+                    <ArrowIcon
+                      className={`size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground ${
+                        isInternal ? "" : "group-hover:-translate-y-0.5"
+                      }`}
                       aria-hidden
                     />
                   )}
@@ -35,13 +41,12 @@ export default function PrivacySection() {
 
             return (
               <li key={title} className="bg-background">
-                {href ? (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group block h-full p-8 transition-colors hover:bg-muted/40"
-                  >
+                {href && isInternal ? (
+                  <Link to={href} className={cardClass}>
+                    {inner}
+                  </Link>
+                ) : href ? (
+                  <a href={href} target="_blank" rel="noopener noreferrer" className={cardClass}>
                     {inner}
                   </a>
                 ) : (

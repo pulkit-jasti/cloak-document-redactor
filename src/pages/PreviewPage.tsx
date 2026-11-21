@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom'
-import { Download, PenLine, RotateCcw, ShieldCheck } from 'lucide-react'
+import { ArrowUpRight, Download, PenLine, RotateCcw, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import CtaButton from '@/components/CtaButton'
 import Navbar from '@/components/Navbar'
 import PdfViewer from '@/components/PdfViewer'
 import { useCloak } from '@/context/CloakContext'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
+import { LINKS } from '@/lib/links'
 
 function formatList(items: string[]) {
   if (items.length < 2) return items.join('')
@@ -100,6 +101,16 @@ export default function PreviewPage() {
                 Download PDF
               </CtaButton>
             </div>
+            {/* New tab, so the redacted document on this page isn't lost. */}
+            <a
+              href={LINKS.verify}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='mx-auto -mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors'
+            >
+              Want proof nothing left your device?
+              <ArrowUpRight className='size-3' aria-hidden />
+            </a>
             <button
               onClick={handleStartOver}
               className='mx-auto flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors'

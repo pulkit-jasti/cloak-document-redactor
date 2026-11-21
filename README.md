@@ -57,9 +57,10 @@ Both run as 8-bit quantized ONNX models on the CPU. Model files are not part of 
 
 ```
 src/
-  App.tsx                    Routes: /, /preview, /edit (unknown paths redirect home and clear state)
+  App.tsx                    Routes: /, /verify, /preview, /edit (unknown paths redirect home and clear state)
   pages/
     UploadPage/              Landing page: hero, upload panel, marketing sections, FAQ, footer
+    VerifyPage/              How to check that nothing is uploaded and that redactions are real
     PreviewPage.tsx          Redacted PDF preview, download, run time
     EditPage/                Review list (one card per unique value) + highlighted PDF
   components/                Navbar, PdfViewer, CtaButton, CloakingOverlay (loading screen), modals, shadcn ui/
@@ -75,7 +76,7 @@ src/
     mupdf.worker.ts          Load, render, whole-word search, redact, strip metadata, extract text
     ner.worker.ts            Loads the Transformers.js pipeline and runs NER
     opfsCache.ts             Caches model files in the Origin Private File System
-  prerender.tsx              Landing page pre-render entry
+  prerender.tsx              Pre-renders / and /verify, with per-page title, description and social tags
 public/                      Favicons, manifest, robots.txt, sitemap.xml, llms.txt, OG image
 test/                        Playwright specs, test PDFs and expected-PII fixtures
 ```

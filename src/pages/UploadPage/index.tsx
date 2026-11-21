@@ -28,7 +28,7 @@ export default function UploadPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar overHero={heroLogoInView} />
+      <Navbar overHero={heroLogoInView} showVerify />
 
       <main className="flex-1">
         <Hero logoRef={heroLogoRef} />

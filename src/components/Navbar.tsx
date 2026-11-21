@@ -1,4 +1,4 @@
-import { Moon, Sun } from 'lucide-react';
+import { Lock, Moon, Sun } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Theme, useTheme } from '@/context/ThemeContext';
@@ -10,9 +10,10 @@ type Props = {
 	children?: React.ReactNode;
 	overHero?: boolean;
 	title?: string | null;
+	showVerify?: boolean;
 };
 
-export default function Navbar({ children, overHero = false, title }: Props) {
+export default function Navbar({ children, overHero = false, title, showVerify = false }: Props) {
 	const { theme, toggleTheme } = useTheme();
 
 	return (
@@ -42,6 +43,20 @@ export default function Navbar({ children, overHero = false, title }: Props) {
 				</span>
 			)}
 			<div className='flex-1' />
+			{showVerify && (
+				// Hidden while the hero (and its own verify pill) is on screen, like the logo.
+				<Link
+					to={LINKS.verify}
+					aria-hidden={overHero || undefined}
+					tabIndex={overHero ? -1 : undefined}
+					className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground transition-all duration-300 hover:text-foreground ${
+						overHero ? 'opacity-0 -translate-y-1 pointer-events-none' : 'opacity-100'
+					}`}
+				>
+					<Lock className='size-3' aria-hidden />
+					Verify it
+				</Link>
+			)}
 			<Button variant='ghost' size='icon' asChild>
 				<a href={LINKS.repo} target='_blank' rel='noopener noreferrer' aria-label='Cloak on GitHub'>
 					<GithubIcon className='size-4' aria-hidden />

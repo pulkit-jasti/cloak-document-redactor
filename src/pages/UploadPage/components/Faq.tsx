@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Plus } from "lucide-react"
+import { Link } from "react-router-dom"
+import { ArrowRight, Plus } from "lucide-react"
 import SectionHeader from "./SectionHeader"
 import { FAQS } from "../content"
 import { LINKS } from "@/lib/links"
@@ -38,7 +39,7 @@ export default function Faq() {
         />
 
         <div className="border-t">
-          {FAQS.map(({ q, a }, i) => {
+          {FAQS.map(({ q, a, link }, i) => {
             const isOpen = openItems.has(i)
             const answerId = `faq-answer-${i}`
             return (
@@ -70,13 +71,22 @@ export default function Faq() {
                   }`}
                 >
                   <div className="min-h-0 overflow-hidden">
-                    <p
+                    <div
                       className={`pb-5 pr-10 text-sm leading-relaxed text-muted-foreground transition-[opacity,translate] ease-out motion-reduce:transition-none ${
                         isOpen ? "translate-y-0 opacity-100 delay-100 duration-400" : "-translate-y-1 opacity-0 duration-200"
                       }`}
                     >
-                      {a}
-                    </p>
+                      <p>{a}</p>
+                      {link && (
+                        <Link
+                          to={link.href}
+                          className="group mt-3 inline-flex items-center gap-1 font-medium text-foreground hover:opacity-70"
+                        >
+                          {link.label}
+                          <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
