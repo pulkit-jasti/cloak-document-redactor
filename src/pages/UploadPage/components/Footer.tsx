@@ -41,6 +41,14 @@ export default function Footer() {
             >
               AGPL-3.0 License
             </a>
+            <a
+              href={LINKS.thirdPartyLicenses}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-foreground"
+            >
+              Third-party licenses
+            </a>
             <span className="whitespace-nowrap">© {new Date().getFullYear()} {LINKS.author.name}</span>
           </div>
         </div>

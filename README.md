@@ -223,3 +223,5 @@ For a privacy tool, open code also matters for trust: anyone can check that docu
 [AGPL-3.0-or-later](LICENSE). Cloak bundles [MuPDF](https://mupdf.com/), which is also licensed under AGPL-3.0.
 
 Copyright (C) 2026 [Pulkit Jasti](https://github.com/pulkit-jasti).
+
+Licenses of all third-party packages bundled into the site are listed at [cloakdoc.app/licenses.txt](https://cloakdoc.app/licenses.txt). The file is generated on every build by `rollup-plugin-license` (see `vite.config.ts`), and the build fails if a bundled package uses a license outside the allowed list.
