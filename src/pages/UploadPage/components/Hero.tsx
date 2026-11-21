@@ -37,10 +37,10 @@ export default function Hero({ logoRef }: HeroProps) {
       <div className="pointer-events-none relative mx-auto flex max-w-2xl flex-col items-center px-6 pt-10 pb-24 text-center md:pt-16">
         <Link
           to={LINKS.verify}
-          className="group pointer-events-auto inline-flex items-center gap-2 rounded-full border bg-background/70 px-3.5 py-1.5 text-xs text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+          className="group pointer-events-auto inline-flex items-center gap-2 rounded-full border bg-background/70 px-3.5 py-1.5 text-[13px] text-foreground backdrop-blur transition-colors hover:bg-muted/70"
         >
           <Lock className="size-3.5" aria-hidden />
-          Never leaves your device.
+          100% local.
           <span className="inline-flex items-center gap-1 font-medium text-foreground">
             Verify it
             <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" aria-hidden />

@@ -1,7 +1,9 @@
-import { ChevronDown, Cpu, Download, Loader2, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronDown, Cpu, Download, Loader2, Trash2, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useNerModel, type NerDownloadState } from '@/context/NerModelContext'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { NER_MODELS, getNerModel, type NerModel } from '@/lib/nerModels'
 import Modal from '@/components/Modal'
 
@@ -99,6 +101,14 @@ interface ModelSelectorModalProps {
 
 export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
   const { selectedId, setSelectedId, states, download, remove } = useNerModel()
+  const online = useOnlineStatus()
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
+
+  // Offline, a removed model can't be downloaded again, so ask first.
+  const handleRemove = (id: string) => {
+    if (online) remove(id)
+    else setConfirmRemoveId(id)
+  }
 
   const handleSelectNer = (id: string) => {
     setSelectedId(id)
@@ -118,22 +128,49 @@ export function ModelSelectorModal({ open, onClose }: ModelSelectorModalProps) {
       <div className="flex flex-col gap-6 p-4 overflow-y-auto max-h-[65vh]">
         <div className="flex flex-col gap-1.5">
           {NER_MODELS.map((m) => (
-            <ModelRow
-              key={m.id}
-              name={m.name}
-              subtitle={nerSubtitle(m)}
-              badge={m.badge}
-              selected={selectedId === m.id}
-              onClick={() => handleSelectNer(m.id)}
-              action={
-                <NerModelAction
-                  model={m}
-                  state={states[m.id] ?? { status: 'checking' }}
-                  onDownload={() => download(m.id)}
-                  onRemove={() => remove(m.id)}
-                />
-              }
-            />
+            <div key={m.id} className="flex flex-col gap-1.5">
+              <ModelRow
+                name={m.name}
+                subtitle={nerSubtitle(m)}
+                badge={m.badge}
+                selected={selectedId === m.id}
+                onClick={() => handleSelectNer(m.id)}
+                action={
+                  <NerModelAction
+                    model={m}
+                    state={states[m.id] ?? { status: 'checking' }}
+                    onDownload={() => download(m.id)}
+                    onRemove={() => handleRemove(m.id)}
+                  />
+                }
+              />
+              {confirmRemoveId === m.id && (
+                <div role="alert" className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-3 text-sm">
+                  <p className="flex gap-2 text-muted-foreground">
+                    <WifiOff className="mt-0.5 size-4 shrink-0 text-foreground" aria-hidden />
+                    <span>
+                      You&apos;re offline. If you remove {m.name}, you won&apos;t be able to download it again until
+                      you&apos;re back online.
+                    </span>
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => setConfirmRemoveId(null)}>
+                      Keep it
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        setConfirmRemoveId(null)
+                        remove(m.id)
+                      }}
+                    >
+                      Remove anyway
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
 

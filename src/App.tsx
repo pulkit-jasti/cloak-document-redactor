@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
+import PwaToast from '@/components/PwaToast';
 import { CloakProvider } from '@/context/CloakContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { OllamaProvider } from '@/context/OllamaContext';
@@ -24,12 +25,27 @@ function UnknownRoute() {
 	return <Navigate to='/' replace />;
 }
 
+// Shared by every page: the offline and update notifications sit on top of the current page.
+function RootLayout() {
+	return (
+		<>
+			<Outlet />
+			<PwaToast />
+		</>
+	);
+}
+
 const router = createBrowserRouter([
-	{ path: '/', element: <UploadPage /> },
-	{ path: '/verify', element: <VerifyPage /> },
-	{ path: '/preview', element: <RequirePdf><PreviewPage /></RequirePdf> },
-	{ path: '/edit', element: <RequirePdf><EditPage /></RequirePdf> },
-	{ path: '*', element: <UnknownRoute /> },
+	{
+		element: <RootLayout />,
+		children: [
+			{ path: '/', element: <UploadPage /> },
+			{ path: '/verify', element: <VerifyPage /> },
+			{ path: '/preview', element: <RequirePdf><PreviewPage /></RequirePdf> },
+			{ path: '/edit', element: <RequirePdf><EditPage /></RequirePdf> },
+			{ path: '*', element: <UnknownRoute /> },
+		],
+	},
 ]);
 
 export default function App() {

@@ -4,7 +4,6 @@ export const VERIFY_TITLE = 'Verify Cloak | Check That Your PDF Never Leaves You
 export const VERIFY_DESCRIPTION =
   "Don't take our word for it. Simple tests anyone can run to confirm Cloak never uploads your PDF, plus how to check that redacted text is really gone."
 
-// Describes offline support with the planned service worker (reload works offline). Not shipped yet.
 export const OFFLINE_STEPS = [
   'Open Cloak and redact any PDF once while you are online. The sample document works. This saves the app and the detection model in your browser.',
   'Turn off Wi-Fi, or unplug your network cable.',

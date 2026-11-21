@@ -34,10 +34,10 @@ Live at [cloakdoc.app](https://cloakdoc.app). Desktop browsers only for now.
 
 | Model | Hugging Face repo | Download | License |
 | ----- | ----------------- | -------- | ------- |
-| PII Redactor (default) | [`Horizon-Labs/pii-redactor-small`](https://huggingface.co/Horizon-Labs/pii-redactor-small) | ~290 MB | Apache-2.0 |
-| Gravitee PII Small | [`gravitee-io/bert-small-pii-detection`](https://huggingface.co/gravitee-io/bert-small-pii-detection) | ~29 MB | Apache-2.0 |
+| Gravitee PII Small (default) | [`gravitee-io/bert-small-pii-detection`](https://huggingface.co/gravitee-io/bert-small-pii-detection) | ~29 MB | Apache-2.0 |
+| PII Redactor (most accurate) | [`Horizon-Labs/pii-redactor-small`](https://huggingface.co/Horizon-Labs/pii-redactor-small) | ~290 MB | Apache-2.0 |
 
-Both run as 8-bit quantized ONNX models on the CPU. Model files are not part of this repository; they keep their own licenses and notices.
+If no model has been picked, the first run downloads the small default model. Both run as 8-bit quantized ONNX models on the CPU. Model files are not part of this repository; they keep their own licenses and notices.
 
 ## Stack
 
@@ -49,6 +49,7 @@ Both run as 8-bit quantized ONNX models on the CPU. Model files are not part of 
 - **libphonenumber-js**, **validator** and **chrono-node**: phone, email, card, IBAN, IP and date matching
 - **Ollama** (optional): local LLM detection over `http://localhost:11434`
 - **vite-prerender-plugin**: pre-renders the landing page HTML for SEO
+- **vite-plugin-pwa** (Workbox): service worker that saves the app for offline use, plus the update and "ready to work offline" notices
 - **vite-plugin-svgr**: SVGs imported as React components (`*.svg?react`)
 - **`cn` package** for class merging (replaces `clsx` + `tailwind-merge`). There is no `@/lib/utils`; import `cn` from `"cn"`.
 - **Playwright**: end-to-end and detection-quality tests
@@ -179,6 +180,18 @@ Then use **Connect Ollama** on the landing page and pick a model in the model se
 - A stopwatch on the loading screen.
 - `window.__cloakEntities` and `window.__cloakOllamaModel`, read by the Playwright tests.
 - The leave-page warning is turned off.
+
+### Testing offline mode
+
+The service worker only runs in production builds, not under `npm run dev`:
+
+1. `npm run build`, then `npm run preview` and open [http://localhost:4173](http://localhost:4173).
+2. Wait for "Cloak is ready to work offline", then redact a PDF once so the model is saved.
+3. In DevTools, Network tab, set throttling to **Offline** (or turn off Wi-Fi), reload and redact again.
+4. To test the update notice, change any text, run `npm run build` again while the preview tab stays open, then reload once. "A new version of Cloak is available" appears in the bottom right.
+5. To start fresh, use DevTools > Application > Storage > **Clear site data**.
+
+When hosting, serve `sw.js` with `Cache-Control: no-cache` so browsers always see new versions.
 
 ## Scripts
 

@@ -34,7 +34,8 @@ export const NER_MODELS: NerModel[] = [
   },
 ]
 
-export const DEFAULT_NER_MODEL_ID = 'pii-redactor-small'
+// Smallest model (~29 MB), so a first-time run without picking a model downloads fast.
+export const DEFAULT_NER_MODEL_ID = 'gravitee-pii-small'
 
 export const NER_TASK = 'token-classification'
 

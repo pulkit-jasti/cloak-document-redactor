@@ -20,7 +20,7 @@ export default function Footer() {
       <div className="mx-auto max-w-5xl px-6 py-12">
         <div className="flex flex-col gap-10 md:flex-row md:justify-between">
           <div className="flex flex-col gap-3">
-            <Logo role="img" aria-label="Cloak" className="h-4 w-auto self-start" />
+            <Logo role="img" aria-label="Cloak" className="h-6 w-auto self-start" />
             <p className="text-sm text-muted-foreground">Private PDF redaction that runs in your browser.</p>
           </div>
 
