@@ -70,4 +70,5 @@ export const LINKS_OUT = {
   repo: LINKS.repo,
   licenses: LINKS.thirdPartyLicenses,
   security: `${LINKS.repo}/security/policy`,
+  privacy: LINKS.privacy,
 }

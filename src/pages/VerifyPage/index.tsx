@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { Check, WifiOff } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/pages/UploadPage/components/Footer'
@@ -123,6 +124,10 @@ export default function VerifyPage() {
               <a href={LINKS_OUT.licenses} target="_blank" rel="noopener noreferrer" className={linkClass}>
                 third-party licenses
               </a>
+              . Everything on this page is also written down in our{' '}
+              <Link to={LINKS_OUT.privacy} className={linkClass}>
+                privacy policy
+              </Link>
               .
             </p>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground text-pretty">

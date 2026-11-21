@@ -44,7 +44,9 @@
 
 - No accounts, analytics or cookies.
 - Your PDF and its text never leave the browser.
-- The only network requests are the site's own files, the detection model (downloaded once, then cached), the ONNX Runtime files, and, only if you turn it on, your own local Ollama server.
+- The only network requests are the site's own files, the detection model (downloaded once from our own server, then cached), the ONNX Runtime files, and, only if you turn it on, your own local Ollama server.
+
+Read the full [privacy policy](https://cloakdoc.app/privacy).
 
 
 ## Models

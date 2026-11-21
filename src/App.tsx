@@ -9,6 +9,7 @@ import UploadPage from '@/pages/UploadPage';
 import PreviewPage from '@/pages/PreviewPage';
 import EditPage from '@/pages/EditPage';
 import VerifyPage from '@/pages/VerifyPage';
+import PrivacyPage from '@/pages/PrivacyPage';
 import { useCloak } from '@/context/CloakContext';
 
 function RequirePdf({ children }: { children: React.ReactNode }) {
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
 		children: [
 			{ path: '/', element: <UploadPage /> },
 			{ path: '/verify', element: <VerifyPage /> },
+			{ path: '/privacy', element: <PrivacyPage /> },
 			{ path: '/preview', element: <RequirePdf><PreviewPage /></RequirePdf> },
 			{ path: '/edit', element: <RequirePdf><EditPage /></RequirePdf> },
 			{ path: '*', element: <UnknownRoute /> },

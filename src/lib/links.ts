@@ -5,6 +5,7 @@ export const LINKS = {
   license: `${REPO}/blob/master/LICENSE`,
   thirdPartyLicenses: '/licenses.txt',
   verify: '/verify',
+  privacy: '/privacy',
   author: {
     name: 'Pulkit Jasti',
     github: 'https://github.com/pulkit-jasti',

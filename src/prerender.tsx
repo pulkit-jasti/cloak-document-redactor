@@ -7,6 +7,8 @@ import { NerModelProvider } from '@/context/NerModelContext'
 import UploadPage from '@/pages/UploadPage'
 import VerifyPage from '@/pages/VerifyPage'
 import { VERIFY_DESCRIPTION, VERIFY_TITLE } from '@/pages/VerifyPage/content'
+import PrivacyPage from '@/pages/PrivacyPage'
+import { PRIVACY_DESCRIPTION, PRIVACY_TITLE } from '@/pages/PrivacyPage/content'
 
 const SITE = 'https://cloakdoc.app'
 
@@ -24,6 +26,11 @@ const PAGES: Record<string, PageMeta> = {
     title: VERIFY_TITLE,
     description: VERIFY_DESCRIPTION,
     page: <VerifyPage />,
+  },
+  '/privacy': {
+    title: PRIVACY_TITLE,
+    description: PRIVACY_DESCRIPTION,
+    page: <PrivacyPage />,
   },
 }
 

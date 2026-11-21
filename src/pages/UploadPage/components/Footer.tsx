@@ -45,6 +45,11 @@ export default function Footer() {
             </Column>
             <Column title="Legal">
               <li>
+                <Link to={LINKS.privacy} className={linkClass}>
+                  Privacy policy
+                </Link>
+              </li>
+              <li>
                 <a href={LINKS.license} target="_blank" rel="noopener noreferrer license" className={linkClass}>
                   AGPL-3.0 License
                 </a>
