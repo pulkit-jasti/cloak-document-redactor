@@ -6,6 +6,7 @@ export const LINKS = {
   thirdPartyLicenses: '/licenses.txt',
   verify: '/verify',
   privacy: '/privacy',
+  ollama: '/ollama',
   author: {
     name: 'Pulkit Jasti',
     github: 'https://github.com/pulkit-jasti',

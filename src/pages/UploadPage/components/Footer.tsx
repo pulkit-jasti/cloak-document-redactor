@@ -32,6 +32,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link to={LINKS.ollama} className={linkClass}>
+                  Ollama setup guide
+                </Link>
+              </li>
+              <li>
                 <a
                   href={LINKS.repo}
                   target="_blank"

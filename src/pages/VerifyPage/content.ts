@@ -35,7 +35,7 @@ export const REQUESTS: { host: string; what: string; when: string }[] = [
   },
   {
     host: 'localhost:11434',
-    what: 'Your own Ollama server. Page text is sent here for detection, so it goes to the address you set, which is your own computer by default.',
+    what: 'Ollama on your own computer. Page text is sent here for detection. You can change the port, but the address is always localhost.',
     when: 'Only if you connect Ollama.',
   },
 ]

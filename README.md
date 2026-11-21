@@ -101,7 +101,7 @@ Install [Ollama](https://ollama.com/), pull a chat model, and start it so it acc
 OLLAMA_ORIGINS=http://localhost:5173 ollama serve
 ```
 
-Then use **Connect Ollama** on the landing page.
+Then use **Connect Ollama** on the landing page. Cloak only talks to Ollama on `localhost`; the port (default 11434) can be changed under Advanced settings. To use Ollama on another machine, forward it to a local port with SSH. The full user guide is at `/ollama` ([cloakdoc.app/ollama](https://cloakdoc.app/ollama)).
 
 | Script | What it does |
 | ------ | ------------ |

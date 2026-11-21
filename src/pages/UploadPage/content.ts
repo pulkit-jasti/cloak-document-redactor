@@ -70,6 +70,7 @@ export const FAQS: { q: string; a: string; link?: { label: string; href: string 
   {
     q: 'Can I choose what gets redacted?',
     a: 'Yes. You can uncheck anything before downloading. With a local AI model connected through Ollama, you can also describe what to hide in plain English, like "hide the witnesses but keep the accused". The model runs on your own computer, so nothing leaves your device.',
+    link: { label: 'Ollama setup guide', href: LINKS.ollama },
   },
   {
     q: 'Is the redaction permanent?',

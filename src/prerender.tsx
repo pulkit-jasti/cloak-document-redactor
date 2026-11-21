@@ -9,6 +9,8 @@ import VerifyPage from '@/pages/VerifyPage'
 import { VERIFY_DESCRIPTION, VERIFY_TITLE } from '@/pages/VerifyPage/content'
 import PrivacyPage from '@/pages/PrivacyPage'
 import { PRIVACY_DESCRIPTION, PRIVACY_TITLE } from '@/pages/PrivacyPage/content'
+import OllamaPage from '@/pages/OllamaPage'
+import { OLLAMA_DESCRIPTION, OLLAMA_TITLE } from '@/pages/OllamaPage/content'
 
 const SITE = 'https://cloakdoc.app'
 
@@ -31,6 +33,11 @@ const PAGES: Record<string, PageMeta> = {
     title: PRIVACY_TITLE,
     description: PRIVACY_DESCRIPTION,
     page: <PrivacyPage />,
+  },
+  '/ollama': {
+    title: OLLAMA_TITLE,
+    description: OLLAMA_DESCRIPTION,
+    page: <OllamaPage />,
   },
 }
 

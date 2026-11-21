@@ -1,37 +1,38 @@
 import type { Redaction } from '@/types'
 import { extractRegexEntities, isClaimed, valueKey, type DetectPiiOptions } from '@/lib/pdfPipeline'
 
-export const DEFAULT_OLLAMA_URL = 'http://localhost:11434'
-const URL_STORAGE_KEY = 'cloak:ollama:url'
+// Ollama always runs on this computer. Only the port can change; a remote
+// machine can be reached by forwarding it to a local port (SSH tunnel).
+export const OLLAMA_HOST = 'http://localhost'
+export const DEFAULT_OLLAMA_PORT = 11434
+const PORT_STORAGE_KEY = 'cloak:ollama:port'
 
-export function normalizeOllamaUrl(url: string): string {
-  return url.trim().replace(/\/+$/, '') || DEFAULT_OLLAMA_URL
+export function parseOllamaPort(value: string): number | null {
+  const trimmed = value.trim()
+  if (!/^\d{1,5}$/.test(trimmed)) return null
+  const port = Number(trimmed)
+  return port >= 1 && port <= 65535 ? port : null
 }
 
-export function getOllamaUrl(): string {
+export function getOllamaPort(): number {
   try {
-    return normalizeOllamaUrl(localStorage.getItem(URL_STORAGE_KEY) ?? '')
+    return parseOllamaPort(localStorage.getItem(PORT_STORAGE_KEY) ?? '') ?? DEFAULT_OLLAMA_PORT
   } catch {
-    return DEFAULT_OLLAMA_URL
+    return DEFAULT_OLLAMA_PORT
   }
 }
 
-export function setOllamaUrl(url: string) {
-  const value = normalizeOllamaUrl(url)
+export function setOllamaPort(port: number) {
   try {
-    if (value === DEFAULT_OLLAMA_URL) localStorage.removeItem(URL_STORAGE_KEY)
-    else localStorage.setItem(URL_STORAGE_KEY, value)
+    if (port === DEFAULT_OLLAMA_PORT) localStorage.removeItem(PORT_STORAGE_KEY)
+    else localStorage.setItem(PORT_STORAGE_KEY, String(port))
   } catch {
     return
   }
 }
 
-export function isLocalOllamaUrl(url: string): boolean {
-  try {
-    return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(normalizeOllamaUrl(url)).hostname)
-  } catch {
-    return false
-  }
+export function getOllamaUrl(): string {
+  return `${OLLAMA_HOST}:${getOllamaPort()}`
 }
 const PROBE_TIMEOUT_MS = 2000
 const PAGE_TIMEOUT_MS = 180_000

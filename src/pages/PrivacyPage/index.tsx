@@ -77,7 +77,8 @@ export default function PrivacyPage() {
               </li>
               <li>
                 Your files, their text and the redacted results are never uploaded to us or to anyone else. The only
-                exception is the optional Ollama feature described in section 6, which sends text to a server you choose.
+                exception is the optional Ollama feature described in section 6, which sends text to Ollama on your own
+                computer.
               </li>
               <li>
                 Documents are held in your browser&apos;s memory only while you work on them, and are discarded when you
@@ -131,7 +132,7 @@ export default function PrivacyPage() {
             <ul>
               <li>
                 <strong>Settings</strong> (in local storage): your theme, the selected detection model, and the Ollama
-                server address and selected Ollama models.
+                port and selected Ollama models.
               </li>
               <li>
                 <strong>App files</strong>, saved by a service worker so Cloak works without an internet connection.
@@ -146,10 +147,10 @@ export default function PrivacyPage() {
 
           <Section id="ollama" n={6} title="Optional: Ollama">
             <p>
-              Ollama is off by default. If you choose to connect it, Cloak sends the text of your document to the Ollama
-              server address you enter, which is your own computer (http://localhost:11434) by default. That server is
-              controlled by you, not by us. If you enter the address of another machine, the text is sent to that
-              machine.
+              Ollama is off by default. If you choose to connect it, Cloak sends the text of your document to Ollama on
+              your own computer (http://localhost, port 11434 by default). You can change the port, but not the address,
+              so Cloak itself never sends your text to another machine. Ollama is controlled by you, not by us. If you
+              forward that port to another machine yourself, for example with SSH, the text goes to that machine.
             </p>
           </Section>
 
